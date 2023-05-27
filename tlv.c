@@ -3,7 +3,7 @@
 BYTE *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t data_length, uint16_t *encodedLength)
 {
     // Calculate the length required for the TLV encoding
-    uint16_t length = sizeof(uint8_t) + sizeof(uint8_t) + data_length;
+    uint16_t length = sizeof(uint8_t) + sizeof(uint16_t) + sizeof(uint16_t) + data_length;
 
     // Allocate memory for the encoded TLV data
     BYTE *encoded_data = (BYTE *)malloc(length);
@@ -51,7 +51,7 @@ BOOL tlv_init_file(const char *filename)
 BOOL tlv_write_int(uint16_t key, int value)
 {
 
-    size_t encoded_length;
+    uint16_t encoded_length;
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_INT, key, &value, sizeof(int), &encoded_length);
     if (encoded_data == NULL)
     {
@@ -66,7 +66,7 @@ BOOL tlv_write_string(uint16_t key, const char *value)
 {
 
     uint16_t encoded_length;
-    BYTE *encoded_data = encode_tlv(TLV_TOKEN_STRING, key, value, strlen(value), &encoded_length);
+    BYTE *encoded_data = encode_tlv(TLV_TOKEN_STRING, key, value, strlen(value)+1, &encoded_length);
     if (encoded_data == NULL)
     {
         fclose(tlv_file);
@@ -79,7 +79,7 @@ BOOL tlv_write_string(uint16_t key, const char *value)
 BOOL tlv_write_bool(uint16_t key, BOOL value)
 {
     bool boolValue = true;
-    size_t encoded_length;
+    uint16_t encoded_length;
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_BOOL, key, &value, sizeof(BOOL), &encoded_length);
     if (encoded_data == NULL)
     {
@@ -94,7 +94,7 @@ BOOL tlv_write_bool(uint16_t key, BOOL value)
 BOOL tlv_write_start()
 {
     bool boolValue = true;
-    size_t encoded_length;
+    uint16_t encoded_length;
     BYTE *nl = encode_tlv(TLV_TOKEN_LINE, 0, 0, 0, &encoded_length);
     if (nl == NULL)
     {
@@ -184,7 +184,7 @@ int tlv_read_file(const char *filename)
         nbytes = fread(buffer, 1, sizeof(uint16_t), file); // read data length
         if (nbytes > 0)
         {
-             memcpy(&length, buffer, sizeof(length));
+            memcpy(&length, buffer, sizeof(length));
             total_bytes = total_bytes + nbytes;
         }
         else
