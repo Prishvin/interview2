@@ -16,9 +16,9 @@ extern  int hash_key;
 
 void hash_print();
 int hash_init();
-void hash_add(int key, char* name);
+void hash_add(const char* key, int value);
 void hash_destroy();
 BOOL hash_key_present(char* key);
-int hash_get_key(char* key);
+
 
 #endif

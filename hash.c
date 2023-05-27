@@ -1,4 +1,8 @@
 #include "hash.h"
+#include <apr.h>
+#include <apr_strings.h>
+#include <apr_pools.h>
+#include <apr_strings.h>
 
 int hash_key = 0;
 apr_pool_t *pool = NULL;
@@ -25,9 +29,13 @@ void hash_print()
 int hash_init()
 {
     hash_key = 0;
-    apr_initialize();
-    atexit(apr_terminate);
-
+    int rc = apr_initialize();
+    if (rc != APR_SUCCESS)
+    {
+        perror("apr init");
+        printf("Failed to initialize APR\n");
+        return 1;
+    }
     apr_pool_create(&pool, NULL);
 
     hash = apr_hash_make(pool);
@@ -70,9 +78,20 @@ int hash_get_key(char *key)
 
     return result;
 }
-void hash_add(int key, char *name)
+
+void hash_add(const char *key, int value)
 {
-    int *value = apr_palloc(pool, sizeof(int));
-    *value = key;
-    apr_hash_set(hash, name, APR_HASH_KEY_STRING, value);
+    int *pValue = apr_palloc(pool, sizeof(int));
+    if (pValue == NULL)
+    {
+        perror("Hash item allocation error");
+    }
+    *pValue = value;
+    char *pKey = apr_pstrdup(pool, key);
+    if (pKey == NULL)
+    {
+        perror("Key allocation error");
+        return;
+    }
+    apr_hash_set(hash, pKey, APR_HASH_KEY_STRING, pValue);
 }

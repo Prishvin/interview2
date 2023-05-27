@@ -5,12 +5,13 @@
 #include "hash.h"
 #include "common.h"
 #include "tlv.h"
+#include <assert.h>
 
 #define MAX_LINE_LENGTH 1024
 
 void iterate_json_object(json_t *json)
 {
-    const char *key;
+    char *key;
     json_t *value;
     tlv_write_start();
     hash_print();
@@ -19,9 +20,11 @@ void iterate_json_object(json_t *json)
         int key_value = hash_get_key(key);
         if (key_value < 0)
         {
-            hash_add(hash_key++, key);
-
+            key_value = hash_key;
+            hash_add(key, key_value);
+           
             printf("New hash %d - %s\n", hash_key, key);
+             hash_key++;
         }
         else
         {
@@ -38,7 +41,6 @@ void iterate_json_object(json_t *json)
         else if (json_is_integer(value))
         {
             int int_value = json_integer_value(value);
-
             tlv_write_int(key_value, int_value);
             printf("Value (integer): %d\n", int_value);
         }
@@ -96,8 +98,10 @@ void read_json_file(const char *file_name)
     fclose(file);
 }
 
+
 int main(int argc, char *argv[])
 {
+    //test_hash();
     if (argc < 2)
     {
         printf("Please provide a file name as an argument.\n");
