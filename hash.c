@@ -7,6 +7,52 @@
 int hash_key = 0;
 apr_pool_t *pool = NULL;
 apr_hash_t *hash = NULL;
+apr_pool_t *reverse_pool = NULL;
+apr_hash_t *reverse_hash = NULL;
+
+apr_hash_t *hash_swap()
+{
+    apr_pool_t *reverse_pool = NULL;
+    apr_hash_t *reverse_hash = NULL;
+
+    apr_pool_create(&reverse_pool, NULL);
+    reverse_hash = apr_hash_make(reverse_pool);
+    if (reverse_hash == NULL)
+    {
+        perror("New hash creation error");
+        return NULL;
+    }
+
+    apr_hash_index_t *hi;
+    for (hi = apr_hash_first(pool, hash); hi; hi = apr_hash_next(hi))
+    {
+        const char *key;
+        int *val;
+
+        // Get the current key and value
+        apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
+
+        char *pKey = apr_palloc(reverse_pool, sizeof(int));
+        if (pKey == NULL)
+        {
+            perror("Key allocation error");
+            return NULL;
+        }
+        *pKey = *val;
+
+        char *pVal = apr_pstrdup(reverse_pool, key);
+        if (pVal == NULL)
+        {
+            perror("Value allocation error");
+            return NULL;
+        }
+
+        // In the new hash table, the value becomes the key and the key becomes the value
+        apr_hash_set(reverse_hash, pKey, APR_HASH_KEY_STRING, pVal);
+    }
+
+    return reverse_hash;
+}
 
 void hash_print()
 {
@@ -94,4 +140,82 @@ void hash_add(const char *key, int value)
         return;
     }
     apr_hash_set(hash, pKey, APR_HASH_KEY_STRING, pValue);
+}
+
+
+BOOL hash_save_tlv(const char *filename)
+{
+    if(tlv_init_file(filename) != ERROR_NONE)
+        return ERROR_TLV_FILE_OPEN;
+
+    // Write hash map to file
+    apr_hash_index_t *hi;
+    for (hi = apr_hash_first(pool, hash); hi; hi = apr_hash_next(hi))
+    {
+        const char *key;
+        int *val;
+
+        // Get the current key and value
+        apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
+
+        // We use keys as strings and values as integers
+        tlv_write_start();
+        tlv_write_string(1, key); // Using 1 as key for key
+        tlv_write_int(2, *val); // Using 2 as key for value
+    }
+
+    tlv_finilize();
+    return ERROR_NONE;
+}
+
+BOOL hash_load_tlv(const char* filename)
+{
+   if (hash_init() != ERROR_NONE)
+        return ERROR_HASH_CREATION_FAILED;
+
+    if (tlv_read_file(filename) != ERROR_NONE)
+        return ERROR_TLV_FILE_READ;
+
+    // Variables to hold key and value while processing
+    char *hash_key = NULL;
+    int hash_value;
+    BOOL boolValue;
+    
+    // Iterate over the keys in the hash table
+    apr_hash_index_t *hi;
+    for (hi = apr_hash_first(pool, hash); hi; hi = apr_hash_next(hi))
+    {
+        const void *key;
+        void *val;
+
+        // Get the current key and value
+        apr_hash_this(hi, &key, NULL, &val);
+        
+        // Process depending on the token type
+        switch (*((uint8_t *)key))
+        {
+            case TLV_TOKEN_INT:
+                // Convert key to char* and val to int
+                hash_key = apr_pstrdup(pool, (char *)key);
+                hash_value = *(int *)val;
+                hash_add(hash_key, hash_value);
+                break;
+            case TLV_TOKEN_STRING:
+                // Convert key and value to char*
+                hash_key = apr_pstrdup(pool, (char *)key);
+                hash_add(hash_key, atoi((char *)val));
+                break;
+            case TLV_TOKEN_BOOL:
+                // Convert key to char* and val to BOOL
+                hash_key = apr_pstrdup(pool, (char *)key);
+                boolValue = *(BOOL *)val;
+                hash_add(hash_key, boolValue);
+                break;
+            default:
+                printf("Unsupported TLV token type: %d\n", *((uint8_t *)key));
+                break;
+        }
+    }
+    
+    return ERROR_NONE;
 }

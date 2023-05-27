@@ -28,8 +28,15 @@ BYTE *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t data_leng
     return encoded_data;
 }
 
-// TLV Decoder
+BOOL tlv_load_hash(const char* filename)
+{
 
+    return ERROR_HASH_NOT_FOUND;
+}
+BOOL tlv_save_hashmap(const char *filename)
+{
+    return ERROR_HASH_NOT_SAVED;
+}
 BOOL tlv_init_file(const char *filename)
 {
 
@@ -66,7 +73,7 @@ BOOL tlv_write_string(uint16_t key, const char *value)
 {
 
     uint16_t encoded_length;
-    BYTE *encoded_data = encode_tlv(TLV_TOKEN_STRING, key, value, strlen(value)+1, &encoded_length);
+    BYTE *encoded_data = encode_tlv(TLV_TOKEN_STRING, key, value, strlen(value) + 1, &encoded_length);
     if (encoded_data == NULL)
     {
         fclose(tlv_file);
