@@ -22,9 +22,9 @@ void iterate_json_object(json_t *json)
         {
             key_value = hash_key;
             hash_add(key, key_value);
-           
+
             printf("New hash %d - %s\n", hash_key, key);
-             hash_key++;
+            hash_key++;
         }
         else
         {
@@ -98,16 +98,34 @@ void read_json_file(const char *file_name)
     fclose(file);
 }
 
-
 int main(int argc, char *argv[])
 {
-    //test_hash();
-    if (argc < 2)
+    // test_hash();
+    char *input_file = NULL;
+    char *output_tlv_file = "output.tlv";
+    char *output_dictionary_file = "dictionary.tlv";
+
+    for (int i = 1; i < argc; i++)
     {
-        printf("Please provide a file name as an argument.\n");
-        return 0;
+        if (strcmp(argv[i], "--input") == 0)
+        {
+            input_file = argv[++i];
+        }
+        else if (strcmp(argv[i], "--output") == 0)
+        {
+            output_tlv_file = argv[++i];
+        }
+        else if (strcmp(argv[i], "--dic") == 0)
+        {
+            output_dictionary_file = argv[++i];
+        }
     }
 
+    if (!input_file) {
+        printf("Please provide an input file using --input.\n");
+        printf("Usage: %s --input json_to_process --output output_tlv_file --dic output_dictionary_file\n", argv[0]);
+        return 0;
+    }
     int ret = hash_init();
     if (ret != ERROR_NONE)
     {
@@ -115,19 +133,18 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    ret = tlv_init_file("example.tlv");
+    ret = tlv_init_file(output_tlv_file);
     if (ret != ERROR_NONE)
     {
         printf("TLV file opening failed.\n");
         return ret;
     }
 
-    const char *file_name = argv[1];
-    read_json_file(file_name);
+    read_json_file(input_file);
     tlv_finilize();
 
-    //ret = tlv_read_file("example.tlv");
-    hash_save_tlv("dictionary.tlv", pool, hash);
+    // ret = tlv_read_file("example.tlv");
+    hash_save_tlv(output_dictionary_file, pool, hash);
     if (ret != ERROR_NONE)
     {
         printf("TLV file opening failed.\n");

@@ -9,11 +9,11 @@
 #include "jansson.h"
 #include <stdint.h>
 
-#define TLV_TOKEN_LINE 0
-#define TLV_TOKEN_INT 1
-#define TLV_TOKEN_BOOL 2
-#define TLV_TOKEN_STRING 3
-#define TLV_TOKEN REAL 4
+#define TLV_TOKEN_LINE 0x4c
+#define TLV_TOKEN_INT 0x49
+#define TLV_TOKEN_BOOL 0x42
+#define TLV_TOKEN_STRING 0x53
+#define TLV_TOKEN REAL 0x52
 
 #define TLV_MIN_FILE_SIZE 4
 
