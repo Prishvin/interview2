@@ -125,7 +125,9 @@ int main(int argc, char *argv[])
     const char *file_name = argv[1];
     read_json_file(file_name);
     tlv_finilize();
-    ret = tlv_read_file("example.tlv");
+
+    //ret = tlv_read_file("example.tlv");
+    hash_save_tlv("dictionary.tlv", pool, hash);
     if (ret != ERROR_NONE)
     {
         printf("TLV file opening failed.\n");

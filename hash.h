@@ -20,7 +20,7 @@ int hash_init();
 void hash_add(const char *key, int value);
 void hash_destroy();
 BOOL hash_key_present(char *key);
-BOOL hash_load_tlv(const char* filename);
-BOOL hash_save_tlv(const char *filename);
+BOOL hash_load_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash);
+BOOL hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash);
 
 #endif
