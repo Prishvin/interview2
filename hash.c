@@ -142,7 +142,7 @@ void hash_add(const char *key, int value)
     apr_hash_set(hash, pKey, APR_HASH_KEY_STRING, pValue);
 }
 
-BOOL hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
+BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
 {
     if (tlv_init_file(filename) != ERROR_NONE)
         return ERROR_TLV_FILE_OPEN;
@@ -158,9 +158,8 @@ BOOL hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
         apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
 
         // We use keys as strings and values as integers
-        tlv_write_string(1, key); // Using 1 as key for key
-        tlv_write_int(2, *val);   // Using 2 as key for value
-    }
+        tlv_write_string(TLV_TOKEN_STRING, key); 
+        tlv_write_int(TLV_TOKEN_INT, *val);      
 
     tlv_finilize();
     return ERROR_NONE;

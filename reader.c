@@ -7,7 +7,7 @@
 #include "tlv.h"
 #include <assert.h>
 
-#define MAX_LINE_LENGTH 1024
+#define MAX_LINE_LENGTH 2048
 
 void iterate_json_object(json_t *json)
 {
@@ -71,7 +71,9 @@ void read_json_file(const char *file_name)
     json_error_t error;
 
     char line[MAX_LINE_LENGTH];
-    while (fgets(line, sizeof(line), file))
+    //if we would to read a file, which contains long lines, we would allocated line buffer manually
+    //for now max length is MAX_LINE_LENGTH 
+    while (fgets(line, sizeof(line), file)) 
     {
         // Remove the trailing newline character
         line[strcspn(line, "\n")] = '\0';
@@ -100,7 +102,6 @@ void read_json_file(const char *file_name)
 
 int main(int argc, char *argv[])
 {
-    // test_hash();
     char *input_file = NULL;
     char *output_tlv_file = "output.tlv";
     char *output_dictionary_file = "dictionary.tlv";
@@ -121,7 +122,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (!input_file) {
+    if (!input_file)
+    {
         printf("Please provide an input file using --input.\n");
         printf("Usage: %s --input json_to_process --output output_tlv_file --dic output_dictionary_file\n", argv[0]);
         return 0;
@@ -143,13 +145,14 @@ int main(int argc, char *argv[])
     read_json_file(input_file);
     tlv_finilize();
 
-    // ret = tlv_read_file("example.tlv");
-    hash_save_tlv(output_dictionary_file, pool, hash);
+    //write dictionary to tlv file
+    ret = hash_save_tlv(output_dictionary_file, pool, hash);
     if (ret != ERROR_NONE)
     {
         printf("TLV file opening failed.\n");
         return ret;
     }
+    hash_destroy();
 
     return 0;
 }
