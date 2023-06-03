@@ -158,11 +158,12 @@ BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
         apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
 
         // We use keys as strings and values as integers
-        tlv_write_string(TLV_TOKEN_STRING, key); 
-        tlv_write_int(TLV_TOKEN_INT, *val);      
+        tlv_write_string(TLV_TOKEN_STRING, key);
+        tlv_write_int(TLV_TOKEN_INT, *val);
 
-    tlv_finilize();
-    return ERROR_NONE;
+        tlv_finilize();
+        return ERROR_NONE;
+    }
 }
 
 BOOL hash_load_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
