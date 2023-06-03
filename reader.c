@@ -60,6 +60,19 @@ void iterate_json_object(json_t *json)
         }
     }
 }
+
+void read_json_part(void* arg)
+{
+    if(arg == NULL)
+        return;
+    FilePart* part = (FilePart*) arg;
+    FILE* file = fopen(part->file_name, "r");
+    if(file == NULL)
+    {
+        printf("Thread %d, opening file %s fail", part->id, part->file_name);
+    }
+
+}
 void read_json_file(const char *file_name)
 {
     FILE *file = fopen(file_name, "r");
@@ -70,10 +83,12 @@ void read_json_file(const char *file_name)
     }
     json_error_t error;
 
+    long file_size = get_file_size(file);
+
     char line[MAX_LINE_LENGTH];
-    //if we would to read a file, which contains long lines, we would allocated line buffer manually
-    //for now max length is MAX_LINE_LENGTH 
-    while (fgets(line, sizeof(line), file)) 
+    // if we would to read a file, which contains long lines, we would allocated line buffer manually
+    // for now max length is MAX_LINE_LENGTH
+    while (fgets(line, sizeof(line), file))
     {
         // Remove the trailing newline character
         line[strcspn(line, "\n")] = '\0';
@@ -96,7 +111,7 @@ void read_json_file(const char *file_name)
         json_decref(json);
         printf("%s\n", line);
     }
-
+    tlv_finilize();
     fclose(file);
 }
 
@@ -105,6 +120,7 @@ int main(int argc, char *argv[])
     char *input_file = NULL;
     char *output_tlv_file = "output.tlv";
     char *output_dictionary_file = "dictionary.tlv";
+    size_t n_threads = 4;
 
     for (int i = 1; i < argc; i++)
     {
@@ -119,6 +135,10 @@ int main(int argc, char *argv[])
         else if (strcmp(argv[i], "--dic") == 0)
         {
             output_dictionary_file = argv[++i];
+        }
+        else if (strcmp(argv[i], "--nrthreads") == 0)
+        {
+            n_threads = atoi(argv[++i]);
         }
     }
 
@@ -143,9 +163,8 @@ int main(int argc, char *argv[])
     }
 
     read_json_file(input_file);
-    tlv_finilize();
 
-    //write dictionary to tlv file
+    // write dictionary to tlv file
     ret = hash_save_tlv(output_dictionary_file, pool, hash);
     if (ret != ERROR_NONE)
     {

@@ -18,7 +18,7 @@ LFLAGS = -L/usr/local/lib
 LIBS = -lapr-1 -ljansson
 
 # define the C source files
-SRCS = reader.c hash.c tlv.c
+SRCS = reader.c hash.c tlv.c common.c
 
 # define the C object files 
 # (This uses Suffix Replacement within a macro:

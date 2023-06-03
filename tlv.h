@@ -17,7 +17,7 @@
 
 #define TLV_MIN_FILE_SIZE 4
 
-static char *tlv_file_name[MAX_FILE_LENGTH];
+static char tlv_file_name[MAX_FILE_LENGTH];
 static FILE *tlv_file;
 
 unsigned char *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t dataLength, uint16_t *encodedLength);
