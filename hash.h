@@ -3,20 +3,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <jansson.h>                                          // JSON parsing library
-#include "/home/misha/Downloads/apr-1.7.4/include/apr_hash.h" // Apache Portable Runtime library for HashTable
+#include <apr-1.0/apr_hash.h>
+#include <apr-1.0/apr_strings.h>
+#include <apr-1.0/apr_pools.h>
+#include <apr-1.0/apr_strings.h> // Apache Portable Runtime library for HashTable
 #include "errors.h"
 #include "common.h"
 #include "tlv.h"
 
-extern apr_pool_t *pool;
-extern apr_hash_t *hash;
-extern apr_pool_t *reverse_pool;
-extern apr_hash_t *reverse_hash;
-
-extern int hash_key;
+extern _Thread_local apr_pool_t *pool;
+extern _Thread_local apr_hash_t *hash;
+extern _Thread_local apr_pool_t *reverse_pool;
+extern _Thread_local apr_hash_t *reverse_hash;
+extern _Thread_local BYTE thread_id;
+extern _Thread_local int hash_key;
 
 void hash_print();
-int hash_init();
+int hash_init(int key);
 void hash_add(const char *key, int value);
 void hash_destroy();
 BOOL hash_key_present(char *key);

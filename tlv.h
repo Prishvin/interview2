@@ -18,14 +18,14 @@
 #define TLV_MIN_FILE_SIZE 4
 
 static char tlv_file_name[MAX_FILE_LENGTH];
-static FILE *tlv_file;
+_Thread_local static FILE *tlv_file_handle;
 
 unsigned char *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t dataLength, uint16_t *encodedLength);
-BOOL tlv_init_file(const char *file);
+BOOL tlv_init_output_file(const char *file);
 BOOL tlv_write_int(uint16_t key, int value);
 BOOL tlv_write_string(uint16_t key,const char *value);
 BOOL tlv_write_bool(uint16_t key, BOOL value);
-BOOL tlv_write_start();
+BOOL tlv_write_line_start(const char* tlv);
 BOOL tlv_finilize();
 
 int tlv_read_file();

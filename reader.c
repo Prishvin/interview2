@@ -6,15 +6,17 @@
 #include "common.h"
 #include "tlv.h"
 #include <assert.h>
+#include "hash.h"
+#include <threads.h>
 
 #define MAX_LINE_LENGTH 2048
 
-void iterate_json_object(json_t *json)
+void iterate_json_object(json_t *json, FilePart *part)
 {
     char *key;
     json_t *value;
-    tlv_write_start();
-    hash_print();
+
+    // hash_print();
     json_object_foreach(json, key, value)
     {
         int key_value = hash_get_key(key);
@@ -23,71 +25,94 @@ void iterate_json_object(json_t *json)
             key_value = hash_key;
             hash_add(key, key_value);
 
-            printf("New hash %d - %s\n", hash_key, key);
+            printf("[%d] New hash %d - %s\n", part->id, hash_key, key);
             hash_key++;
         }
         else
         {
-            printf("Duplicate %s\n", key);
+            printf("[%d] Duplicate %s\n", part->id, key);
         }
         // Check the type of the value and handle accordingly
         if (json_is_string(value))
         {
-
             const char *str_value = json_string_value(value);
             tlv_write_string(key_value, str_value);
-            printf("Value (string): %s\n", str_value);
+            printf("[%d] Value (string): %s\n", part->id, str_value);
         }
         else if (json_is_integer(value))
         {
             int int_value = json_integer_value(value);
             tlv_write_int(key_value, int_value);
-            printf("Value (integer): %d\n", int_value);
+            printf("[%d] Value (integer): %d\n", part->id, int_value);
         }
         else if (json_is_boolean(value))
         {
             BOOL bool_value = json_boolean_value(value);
             tlv_write_bool(key_value, bool_value);
-            printf("Value (boolean): %s\n", bool_value ? "true" : "false");
+            printf("[%d] Value (boolean): %s\n", part->id, bool_value ? "true" : "false");
         }
         else if (json_is_null(value))
         {
-            printf("Value: null\n");
+            printf("[%d] Value: null\n", part->id);
         }
         else
         {
-            printf("Value: (unknown type)\n");
+            printf("[%d] Value: (unknown type)\n", part->id);
         }
     }
 }
 
-void read_json_part(void* arg)
+int read_json_part(void *arg)
 {
-    if(arg == NULL)
+    if (arg == NULL)
         return;
-    FilePart* part = (FilePart*) arg;
-    FILE* file = fopen(part->file_name, "r");
-    if(file == NULL)
+
+    int ret = hash_init(0x31);
+    if (ret != ERROR_NONE)
     {
-        printf("Thread %d, opening file %s fail", part->id, part->file_name);
+        printf("Hash table init failed.\n");
+        return ret;
     }
 
-}
-void read_json_file(const char *file_name)
-{
-    FILE *file = fopen(file_name, "r");
+    if (ret != ERROR_NONE)
+    {
+        printf("TLV file opening failed.\n");
+        return ret;
+    }
+    FilePart *part = (FilePart *)arg;
+    if (part == NULL)
+    {
+        printf("Invalid thread argument\n");
+        return ERROR_INVALID_THREAD_ELEMENT;
+    }
+    char buf[MAX_FILE_LENGTH];
+    sprintf(buf, "%s%d%s", tlv_file_name, part->id, TLV_EXT);
+
+    ret = tlv_init_output_file(buf);
+    if (ret != ERROR_NONE)
+        if (ret != ERROR_NONE)
+        {
+            printf("[%d] Error opening tlv file\n", part->id);
+            return ret;
+        }
+
+    ret = tlv_write_line_start(buf);
+    if (ret != ERROR_NONE)
+    {
+        printf("[%d] Error writing tlv file\n", part->id);
+        return ret;
+    }
+
+    FILE *file = fopen(part->input_file, "r");
     if (file == NULL)
     {
-        printf("File '%s' not found.\n", file_name);
-        return;
+        printf("]%d] Thread, start [%d], opening file %s fail", part->id, part->start_pos, part->input_file);
     }
+
     json_error_t error;
 
-    long file_size = get_file_size(file);
-
     char line[MAX_LINE_LENGTH];
-    // if we would to read a file, which contains long lines, we would allocated line buffer manually
-    // for now max length is MAX_LINE_LENGTH
+    fseek(file, part->start_pos, SEEK_SET);
     while (fgets(line, sizeof(line), file))
     {
         // Remove the trailing newline character
@@ -106,13 +131,44 @@ void read_json_file(const char *file_name)
             return 1;
         }
 
-        iterate_json_object(json);
+        iterate_json_object(json, part);
 
         json_decref(json);
         printf("%s\n", line);
     }
     tlv_finilize();
     fclose(file);
+}
+void read_json_file(const char *file_name, int nthreads)
+{
+    thrd_t *threads = malloc(sizeof(thrd_t) * nthreads);
+    FilePart *thread_args = malloc(sizeof(FilePart) * nthreads);
+    int rc, i;
+
+    // Create the threads
+    for (i = 0; i < nthreads; i++)
+    {
+        FilePart part; // TODO: divide_file(file_name, nthreads, i);
+        part.input_file = file_name;
+        thread_args[i] = part; // Copy the data to the array
+
+        printf("Creating thread %d\n", i);
+        rc = thrd_create(&threads[i], read_json_part, (void *)&thread_args[i]);
+        if (rc != thrd_success)
+        {
+            fprintf(stderr, "Error: unable to create thread, %d\n", rc);
+            exit(-1);
+        }
+    }
+
+    // Wait for each thread to complete
+    for (i = 0; i < nthreads; i++)
+    {
+        thrd_join(threads[i], NULL);
+    }
+
+    free(threads);
+    free(thread_args);
 }
 
 int main(int argc, char *argv[])
@@ -148,24 +204,11 @@ int main(int argc, char *argv[])
         printf("Usage: %s --input json_to_process --output output_tlv_file --dic output_dictionary_file\n", argv[0]);
         return 0;
     }
-    int ret = hash_init();
-    if (ret != ERROR_NONE)
-    {
-        printf("Hash table init failed.\n");
-        return ret;
-    }
 
-    ret = tlv_init_file(output_tlv_file);
-    if (ret != ERROR_NONE)
-    {
-        printf("TLV file opening failed.\n");
-        return ret;
-    }
-
-    read_json_file(input_file);
+    read_json_file(input_file, n_threads);
 
     // write dictionary to tlv file
-    ret = hash_save_tlv(output_dictionary_file, pool, hash);
+    int ret = hash_save_tlv(output_dictionary_file, pool, hash);
     if (ret != ERROR_NONE)
     {
         printf("TLV file opening failed.\n");

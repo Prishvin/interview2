@@ -28,15 +28,15 @@ BYTE *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t data_leng
     return encoded_data;
 }
 
-BOOL tlv_init_file(const char *filename)
+BOOL tlv_init_output_file(const char *filename)
 {
 
     if (filename != NULL)
     {
         strcpy(tlv_file_name, filename); // TODO check size
         printf("Opening tlv file for writing [%s]\n", tlv_file_name);
-        tlv_file = fopen(tlv_file_name, "wb");
-        if (tlv_file == NULL)
+        tlv_file_handle = fopen(tlv_file_name, "wb");
+        if (tlv_file_handle == NULL)
             return ERROR_TLV_FILE_OPEN;
         else
             return ERROR_NONE;
@@ -53,10 +53,10 @@ BOOL tlv_write_int(uint16_t key, int value)
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_INT, key, &value, sizeof(int), &encoded_length);
     if (encoded_data == NULL)
     {
-        fclose(tlv_file);
+        fclose(tlv_file_handle);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_file);
+    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_file_handle);
     free(encoded_data);
     return ERROR_NONE;
 }
@@ -67,10 +67,10 @@ BOOL tlv_write_string(uint16_t key, const char *value)
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_STRING, key, value, strlen(value) + 1, &encoded_length);
     if (encoded_data == NULL)
     {
-        fclose(tlv_file);
+        fclose(tlv_file_handle);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_file);
+    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_file_handle);
     free(encoded_data);
     return ERROR_NONE;
 }
@@ -81,25 +81,25 @@ BOOL tlv_write_bool(uint16_t key, BOOL value)
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_BOOL, key, &value, sizeof(BOOL), &encoded_length);
     if (encoded_data == NULL)
     {
-        fclose(tlv_file);
+        fclose(tlv_file_handle);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_file);
+    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_file_handle);
     free(encoded_data);
     return ERROR_NONE;
 }
 
-BOOL tlv_write_start()
+BOOL tlv_write_line_start(const char* tlv)
 {
     bool boolValue = true;
     uint16_t encoded_length;
     BYTE *nl = encode_tlv(TLV_TOKEN_LINE, 0, 0, 0, &encoded_length);
     if (nl == NULL)
     {
-        fclose(tlv_file);
+        fclose(tlv);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(nl, sizeof(BYTE), encoded_length, tlv_file);
+    fwrite(nl, sizeof(BYTE), encoded_length, tlv_file_handle);
     free(nl);
     return ERROR_NONE;
 }
@@ -252,6 +252,6 @@ FINALLY:
 }
 BOOL tlv_finilize()
 {
-    if (tlv_file != NULL)
-        fclose(tlv_file);
+    if (tlv_file_handle != NULL)
+        fclose(tlv_file_handle);
 }

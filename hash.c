@@ -1,15 +1,12 @@
 #include "hash.h"
-#include <apr.h>
-#include <apr_strings.h>
-#include <apr_pools.h>
-#include <apr_strings.h>
 
-int hash_key = 0x30;
-apr_pool_t *pool = NULL;
-apr_hash_t *hash = NULL;
-apr_pool_t *reverse_pool = NULL;
-apr_hash_t *reverse_hash = NULL;
 
+_Thread_local int hash_key = 0x30;
+_Thread_local apr_pool_t *pool = NULL;
+_Thread_local apr_hash_t *hash = NULL;
+_Thread_local apr_pool_t *reverse_pool = NULL;
+_Thread_local apr_hash_t *reverse_hash = NULL;
+_Thread_local BYTE thread_id;
 apr_hash_t *hash_swap()
 {
     apr_pool_t *reverse_pool = NULL;
@@ -72,9 +69,9 @@ void hash_print()
     }
 }
 
-int hash_init()
+int hash_init(int key)
 {
-    hash_key = 0x30; // for purpose of seeing an ascii char in the hex editor for initial keys
+    hash_key = key; // for purpose of seeing an ascii char in the hex editor for initial keys
     int rc = apr_initialize();
     if (rc != APR_SUCCESS)
     {
@@ -144,7 +141,7 @@ void hash_add(const char *key, int value)
 
 BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
 {
-    if (tlv_init_file(filename) != ERROR_NONE)
+    if (tlv_init_output_file(filename) != ERROR_NONE)
         return ERROR_TLV_FILE_OPEN;
 
     // Write hash map to file
