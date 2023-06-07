@@ -118,7 +118,7 @@ int read_json_file(const char *file_name, size_t *ntokens)
     fclose(file);
     return ERROR_NONE;
 }
-#ifndef TEST
+#ifndef TEST_FLAG
 
 
 int main(int argc, char *argv[])
