@@ -11,8 +11,8 @@
 
 void iterate_json_object(json_t *json)
 {
-    char *key;
-    json_t *value;
+    const char *key;
+    const json_t *value;
     tlv_write_start();
     hash_print();
     json_object_foreach(json, key, value)
@@ -69,21 +69,21 @@ void read_json_part(void* arg)
     FILE* file = fopen(part->file_name, "r");
     if(file == NULL)
     {
-        printf("Thread %d, opening file %s fail", part->id, part->file_name);
+        printf("Thread %ld, opening file %s fail", part->id, part->file_name);
     }
 
 }
-void read_json_file(const char *file_name)
+int read_json_file(const char *file_name)
 {
     FILE *file = fopen(file_name, "r");
     if (file == NULL)
     {
         printf("File '%s' not found.\n", file_name);
-        return;
+        return ERROR_JSON_FILE_NOT_FOUND;
     }
     json_error_t error;
 
-    long file_size = get_file_size(file);
+    //long file_size = get_file_size(file_name);
 
     char line[MAX_LINE_LENGTH];
     // if we would to read a file, which contains long lines, we would allocated line buffer manually
@@ -96,14 +96,14 @@ void read_json_file(const char *file_name)
         if (!json)
         {
             fprintf(stderr, "Error parsing JSON: %s\n", error.text);
-            return 1;
+            return ERROR_JSON_PARSING_ERROR;
         }
 
         if (!json_is_object(json))
         {
             fprintf(stderr, "JSON is not an object\n");
             json_decref(json);
-            return 1;
+            return ERROR_JSON_PARSING_ERROR;
         }
 
         iterate_json_object(json);
@@ -113,6 +113,7 @@ void read_json_file(const char *file_name)
     }
     tlv_finilize();
     fclose(file);
+    return ERROR_NONE;
 }
 
 int main(int argc, char *argv[])
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
     char *input_file = NULL;
     char *output_tlv_file = "output.tlv";
     char *output_dictionary_file = "dictionary.tlv";
-    size_t n_threads = 4;
+    //size_t n_threads = 4;
 
     for (int i = 1; i < argc; i++)
     {
@@ -138,7 +139,7 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "--nrthreads") == 0)
         {
-            n_threads = atoi(argv[++i]);
+            //n_threads = atoi(argv[++i]);
         }
     }
 

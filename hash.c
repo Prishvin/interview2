@@ -1,6 +1,5 @@
 #include "hash.h"
 
-
 int hash_key = 0x30;
 apr_pool_t *pool = NULL;
 apr_hash_t *hash = NULL;
@@ -110,7 +109,7 @@ BOOL hash_key_present(char *key)
     }
 }
 
-int hash_get_key(char *key)
+int hash_get_key(const char *key)
 {
     int result = -1;
     int *value = apr_hash_get(hash, key, APR_HASH_KEY_STRING);
@@ -157,10 +156,10 @@ BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
         // We use keys as strings and values as integers
         tlv_write_string(TLV_TOKEN_STRING, key);
         tlv_write_int(TLV_TOKEN_INT, *val);
-
-        tlv_finilize();
-        return ERROR_NONE;
     }
+
+    tlv_finilize();
+    return ERROR_NONE;
 }
 
 BOOL hash_load_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)

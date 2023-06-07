@@ -18,6 +18,7 @@ extern apr_hash_t *reverse_hash;
 
 extern int hash_key;
 
+int hash_get_key(const char *key);
 void hash_print();
 int hash_init();
 void hash_add(const char *key, int value);
