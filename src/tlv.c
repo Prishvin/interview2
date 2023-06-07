@@ -1,4 +1,4 @@
-#include "tlv.h"
+#include "../include/tlv.h"
 
 char tlv_file_name[MAX_FILE_LENGTH];
 FILE *tlv_output_file;

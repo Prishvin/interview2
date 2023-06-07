@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <jansson.h>
-#include "hash.h"
-#include "common.h"
-#include "tlv.h"
+#include "../include/hash.h"
+#include "../include/common.h"
+#include "../include/tlv.h"
 #include <assert.h>
-#include "reader.h"
+#include "../include/reader.h"
 
 #define MAX_LINE_LENGTH 2048
 
@@ -74,7 +74,7 @@ void read_json_part(void* arg)
     }
 
 }
-int read_json_file(const char *file_name)
+int read_json_file(const char *file_name, size_t *ntokens)
 {
     FILE *file = fopen(file_name, "r");
     if (file == NULL)
@@ -112,6 +112,8 @@ int read_json_file(const char *file_name)
         json_decref(json);
         printf("%s\n", line);
     }
+    *ntokens = hash_count();
+    printf("hash records %zu\n", *ntokens);
     tlv_finilize();
     fclose(file);
     return ERROR_NONE;
@@ -165,8 +167,8 @@ int main(int argc, char *argv[])
         printf("TLV file opening failed.\n");
         return ret;
     }
-
-    read_json_file(input_file);
+    size_t nkeys;
+    read_json_file(input_file, &nkeys);
 
     // write dictionary to tlv file
     ret = hash_save_tlv(output_dictionary_file, pool, hash);

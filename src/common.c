@@ -1,5 +1,4 @@
-#include "common.h"
-
+#include "../include/common.h"
 long get_file_size(const char *filename)
 {
     FILE *file = fopen(filename, "rb");

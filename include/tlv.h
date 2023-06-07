@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "common.h"
+#include "../include/common.h"
 #include "errors.h"
 #include "jansson.h"
 #include <stdint.h>

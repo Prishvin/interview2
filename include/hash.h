@@ -8,8 +8,8 @@
 #include <apr-1.0/apr_pools.h>
 #include <apr-1.0/apr_strings.h> // Apache Portable Runtime library for HashTable
 #include "errors.h"
-#include "common.h"
-#include "tlv.h"
+#include "../include/common.h"
+#include "../include/tlv.h"
 
 extern apr_pool_t *pool;
 extern apr_hash_t *hash;
@@ -26,5 +26,6 @@ void hash_destroy();
 BOOL hash_key_present(char *key);
 BOOL hash_load_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash);
 BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash);
+size_t hash_count();
 
 #endif

@@ -10,7 +10,8 @@ void test_read_json_file(void) {
     fclose(fp);
 
     // Call function under test
-    int result = read_json_file(filename);
+    size_t nkeys;
+    int result = read_json_file(filename, &nkeys);
 
     // Add assertions
     CU_ASSERT(result == 0);  // Assuming 0 represents success in your function

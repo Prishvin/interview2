@@ -1,4 +1,4 @@
-#include "hash.h"
+#include "../include/hash.h"
 
 int hash_key = 0x30;
 apr_pool_t *pool = NULL;
@@ -49,7 +49,13 @@ apr_hash_t *hash_swap()
 
     return reverse_hash;
 }
-
+size_t hash_count()
+{
+    int n = 0;
+    if (hash != NULL)
+        n = apr_hash_count(hash);
+    return n;
+}
 void hash_print()
 {
     apr_hash_index_t *hi;
