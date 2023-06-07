@@ -6,6 +6,7 @@
 #include "common.h"
 #include "tlv.h"
 #include <assert.h>
+#include "reader.h"
 
 #define MAX_LINE_LENGTH 2048
 
@@ -115,6 +116,8 @@ int read_json_file(const char *file_name)
     fclose(file);
     return ERROR_NONE;
 }
+#ifndef TEST
+
 
 int main(int argc, char *argv[])
 {
@@ -176,3 +179,5 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+#endif

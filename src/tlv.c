@@ -1,7 +1,7 @@
 #include "tlv.h"
 
- char tlv_file_name[MAX_FILE_LENGTH];
- FILE *tlv_output_file;
+char tlv_file_name[MAX_FILE_LENGTH];
+FILE *tlv_output_file;
 BYTE *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t data_length, uint16_t *encodedLength)
 {
     // Calculate the length required for the TLV encoding

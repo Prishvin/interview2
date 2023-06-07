@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -g -Wall
 
 # define any directories containing header files other than /usr/include
-INCLUDES = 
+INCLUDES = -Iinclude
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
@@ -18,7 +18,7 @@ LFLAGS = -L/usr/local/lib
 LIBS = -lapr-1 -ljansson
 
 # define the C source files
-SRCS = reader.c hash.c tlv.c common.c
+SRCS = $(wildcard src/*.c)
 
 # define the C object files 
 # (This uses Suffix Replacement within a macro:
@@ -42,13 +42,14 @@ $(MAIN): $(OBJS)
 # (a .o file in this case). The -c flag says to generate the object file, 
 # the -o $@ says to put the output of the compilation in the file named 
 # on the left side of the :, the $< is the first item in the dependencies list
-.c.o:
+src/%.o: src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
 
 clean:
-	$(RM) *.o *~ $(MAIN)
+	$(RM) src/*.o *~ $(MAIN)
 
 depend: $(SRCS)
 	makedepend $(INCLUDES) $^
 
-# DO NOT DELETE THIS LINE -- make depend needs it 
+# DO NOT DELETE THIS LINE -- make depend needs it
+
