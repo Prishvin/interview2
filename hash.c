@@ -1,8 +1,5 @@
 #include "hash.h"
-#include <apr.h>
-#include <apr_strings.h>
-#include <apr_pools.h>
-#include <apr_strings.h>
+
 
 int hash_key = 0x30;
 apr_pool_t *pool = NULL;

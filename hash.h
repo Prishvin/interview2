@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <jansson.h>                                          // JSON parsing library
-#include "/home/misha/Downloads/apr-1.7.4/include/apr_hash.h" // Apache Portable Runtime library for HashTable
+#include <apr-1.0/apr_hash.h>
+#include <apr-1.0/apr_strings.h>
+#include <apr-1.0/apr_pools.h>
+#include <apr-1.0/apr_strings.h> // Apache Portable Runtime library for HashTable
 #include "errors.h"
 #include "common.h"
 #include "tlv.h"
