@@ -74,7 +74,7 @@ void test_read_json_file(void)
    fprintf(fp_in, "{ \"key4\": \"data\" }\n");
    fprintf(fp_in, "{ \"key5\": 2 }\n");
    fprintf(fp_in, "{ \"key6\": true }\n");
-   fprintf(fp_in, "{ \"key7\": false }\n");
+   fprintf(fp_in, "{ \"key7\": false, \"key8\": \"abcde\"  }\n");
 
    fclose(fp_in);
 
@@ -88,9 +88,12 @@ void test_read_json_file(void)
    size_t ntokens;
    read_json_file(input_file, output_file, dic_file, &ntokens);
 
-   CU_ASSERT(ntokens == 5); 
+   CU_ASSERT(ntokens == 6);
    hash_init();
    hash_load_tlv(dic_file, pool, hash);
+   tlv_read_file(output_file);
+
+   hash_destroy();
 
    // Check specific keys
    CU_ASSERT_TRUE(hash_key_present("key1"));
@@ -98,6 +101,7 @@ void test_read_json_file(void)
    CU_ASSERT_TRUE(hash_key_present("key5"));
    CU_ASSERT_TRUE(hash_key_present("key6"));
    CU_ASSERT_TRUE(hash_key_present("key7"));
+   CU_ASSERT_TRUE(hash_key_present("key8"));
    CU_ASSERT_TRUE(!hash_key_present("keyX"));
 
    // Clean up
@@ -105,7 +109,6 @@ void test_read_json_file(void)
    remove(output_file);
    remove(dic_file);
 }
-
 
 int main()
 {

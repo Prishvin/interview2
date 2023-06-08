@@ -128,98 +128,134 @@ long tlv_file_size(const char *filename)
 }
 int tlv_read_file(const char *filename)
 {
+    long filesize = tlv_file_size(filename);
+    printf("TLV file size is %ld bytes", filesize);
+    if (filesize < TLV_MIN_FILE_SIZE)
+    {
+        fprintf(stderr, "Failed to open the file\n");
+        return ERROR_TLV_FILE_TOO_SMALL;
+    }
     FILE *file = fopen(filename, "rb");
-
     if (file == NULL)
     {
-        perror("Failed to open file");
+        fprintf(stderr, "Failed to open the file\n");
         return ERROR_NO_TLV_FILE;
     }
 
-    json_t *json_obj = json_object(); // Initialize the JSON object
-
-    while (!feof(file))
+    unsigned char *buffer = (unsigned char *)malloc(READ_BUFFER_LENTH);
+    if (buffer == NULL)
     {
-        BYTE tag;
-        uint16_t key, length;
-
-        if (fread(&tag, sizeof(BYTE), 1, file) != 1)
-        {
-            if (feof(file))
-                break;
-            perror("Failed to read tag");
-            fclose(file);
-            return ERROR_TLV_FORMAT;
-        }
-
-        if (fread(&key, sizeof(uint16_t), 1, file) != 1)
-        {
-            perror("Failed to read key");
-            fclose(file);
-            return ERROR_TLV_FORMAT;
-        }
-
-        if (fread(&length, sizeof(uint16_t), 1, file) != 1)
-        {
-            perror("Failed to read length");
-            fclose(file);
-            return ERROR_TLV_FORMAT;
-        }
-
-        // Allocate buffer for data
-        BYTE *buffer = (BYTE *)malloc(length);
-        if (buffer == NULL)
-        {
-            perror("Failed to allocate buffer");
-            fclose(file);
-            return ERROR_TLV_BUFFER_ALLOCATION_FAIL;
-        }
-
-        if (fread(buffer, sizeof(BYTE), length, file) != length)
-        {
-            perror("Failed to read data");
-            free(buffer);
-            fclose(file);
-            return ERROR_TLV_FORMAT;
-        }
-
-        // Start handling the TLV data
-        const char *key_name = hash_get_value((int)key);
-        json_t *value;
-
-        switch (tag)
-        {
-        case TLV_TOKEN_INT:
-            value = json_integer(*(int *)buffer);
-            break;
-        case TLV_TOKEN_BOOL:
-            value = json_boolean(*(BOOL *)buffer);
-            break;
-        case TLV_TOKEN_STRING:
-            value = json_string((char *)buffer);
-            break;
-        default:
-            fprintf(stderr, "Unknown tag value\n");
-            free(buffer);
-            fclose(file);
-            return ERROR_TLV_FORMAT;
-        }
-
-        json_object_set_new(json_obj, key_name, value);
-
-        free(buffer);
+        fprintf(stderr, "Failed to allocate memory for buffer\n");
+        fclose(file);
+        return ERROR_TLV_BUFFER_ALLOCATION_FAIL;
     }
 
-    char *json_string = json_dumps(json_obj, JSON_INDENT(2)); // Convert to formatted string
-    printf("%s\n", json_string);                              // Print the JSON string
+    long total_bytes = 0;
+    json_t *json = NULL;
+    json_t *master_json = json_array();
+    BYTE token;
+    uint16_t length;
+    uint16_t key;
+    BYTE nbytes;
+    char *jsonString;
+    const char* value;
+    while (total_bytes < filesize)
+    {
+        nbytes = fread((void*) buffer, sizeof(BYTE), 1, file); // read tag
+        if (nbytes > 0)
+        {
+            token = buffer[0];
+            total_bytes = total_bytes + nbytes;
+        }
+        else
+        {
+            goto FINALLY;
+        }
 
-    // Clean up
-    free(json_string);
-    json_decref(json_obj);
+        nbytes = fread((void*) buffer, 1, sizeof(uint16_t), file); // read key
+        if (nbytes > 0)
+        {
+            memcpy(&key, buffer, sizeof(key));
+            total_bytes = total_bytes + nbytes;
+        }
+        else
+        {
+            goto FINALLY;
+        }
 
+        nbytes = fread((void*) buffer, 1, sizeof(uint16_t), file); // read data length
+        if (nbytes > 0)
+        {
+            memcpy(&length, buffer, sizeof(length));
+            total_bytes = total_bytes + nbytes;
+        }
+        else
+        {
+            goto FINALLY;
+        }
+
+        nbytes = fread((void*) buffer, sizeof(BYTE), length, file); // check nbytes
+        if (nbytes == length)
+        {
+            total_bytes = total_bytes + nbytes;
+        }
+        else
+        {
+            goto FINALLY;
+        }
+
+        value = hash_get_value(key); // Getting the value from hash using the key.
+
+        switch (token)
+        {
+        case TLV_TOKEN_LINE:
+            if (json != NULL)
+            {
+                json_array_append_new(master_json, json);
+                json = NULL;
+            }
+            json = json_object();
+            if (json == NULL)
+            {
+                fprintf(stderr, "Failed to create JSON object\n");
+                goto FINALLY;
+            }
+            break;
+        case TLV_TOKEN_INT:
+            int *n = (int *)buffer;
+            json_object_set_new(json, value, json_integer(*n));
+            break;
+        case TLV_TOKEN_BOOL:
+            BOOL b = (BOOL)buffer[0];
+            json_object_set_new(json, value, json_boolean(b));
+            break;
+        case TLV_TOKEN_STRING:
+            json_object_set_new(json, value, json_string((const char*) buffer));
+            break;
+        }
+    }
+
+FINALLY:
+    if (json != NULL)
+    {
+        json_array_append_new(master_json, json);
+    }
+    jsonString = json_dumps(master_json, JSON_INDENT(2));
+    if (jsonString == NULL)
+    {
+        fprintf(stderr, "Failed to convert JSON object to string\n");
+        json_decref(master_json);
+        return 1;
+    }
+    printf("All JSON Objects:\n%s\n", jsonString);
+    free(jsonString);
+    json_decref(master_json);
     fclose(file);
-    return ERROR_NONE;
+    free((void *)buffer);
+    return 0;
 }
+
+
 BOOL tlv_finilize()
 {
     int result = ERROR_NONE;
