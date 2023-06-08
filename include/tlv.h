@@ -28,6 +28,6 @@ BOOL tlv_write_bool(uint16_t key, BOOL value);
 BOOL tlv_write_start();
 BOOL tlv_finilize();
 
-int tlv_read_file();
+int tlv_read_json(const char *filename, json_t **master_json);
 long tlv_file_size(const char *filename);
 #endif

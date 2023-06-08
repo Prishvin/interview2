@@ -119,6 +119,9 @@ int read_json_file(const char *input_file, const char *output_file, const char *
         json_decref(json);
         printf("%s\n", line);
     }
+    printf("hash records %zu\n", *ntokens);
+    tlv_finilize();
+
     *ntokens = hash_count();
     ret = hash_save_tlv(dic_file, pool, hash);
     if (ret != ERROR_NONE)
@@ -126,8 +129,7 @@ int read_json_file(const char *input_file, const char *output_file, const char *
         printf("TLV file opening failed.\n");
         return ret;
     }
-    printf("hash records %zu\n", *ntokens);
-    tlv_finilize();
+
     fclose(file);
     return ERROR_NONE;
 }

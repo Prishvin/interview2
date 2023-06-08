@@ -35,7 +35,6 @@ BYTE *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t data_leng
 BOOL tlv_init_file(const char *filename)
 {
 
-
     if (filename != NULL)
     {
         strcpy(tlv_file_name, filename); // TODO check size
@@ -126,10 +125,11 @@ long tlv_file_size(const char *filename)
 
     return size;
 }
-int tlv_read_file(const char *filename)
+int tlv_read_json(const char *filename, json_t **master_json)
 {
     long filesize = tlv_file_size(filename);
-    printf("TLV file size is %ld bytes", filesize);
+    printf("----------------------------------------------------------\n");
+    printf("TLV file %s size is %ld bytes\n", filename, filesize);
     if (filesize < TLV_MIN_FILE_SIZE)
     {
         fprintf(stderr, "Failed to open the file\n");
@@ -152,16 +152,16 @@ int tlv_read_file(const char *filename)
 
     long total_bytes = 0;
     json_t *json = NULL;
-    json_t *master_json = json_array();
+   *master_json = json_array();
     BYTE token;
     uint16_t length;
     uint16_t key;
     BYTE nbytes;
     char *jsonString;
-    const char* value;
+    const char *value;
     while (total_bytes < filesize)
     {
-        nbytes = fread((void*) buffer, sizeof(BYTE), 1, file); // read tag
+        nbytes = fread((void *)buffer, sizeof(BYTE), 1, file); // read tag
         if (nbytes > 0)
         {
             token = buffer[0];
@@ -172,7 +172,7 @@ int tlv_read_file(const char *filename)
             goto FINALLY;
         }
 
-        nbytes = fread((void*) buffer, 1, sizeof(uint16_t), file); // read key
+        nbytes = fread((void *)buffer, 1, sizeof(uint16_t), file); // read key
         if (nbytes > 0)
         {
             memcpy(&key, buffer, sizeof(key));
@@ -183,7 +183,7 @@ int tlv_read_file(const char *filename)
             goto FINALLY;
         }
 
-        nbytes = fread((void*) buffer, 1, sizeof(uint16_t), file); // read data length
+        nbytes = fread((void *)buffer, 1, sizeof(uint16_t), file); // read data length
         if (nbytes > 0)
         {
             memcpy(&length, buffer, sizeof(length));
@@ -194,7 +194,7 @@ int tlv_read_file(const char *filename)
             goto FINALLY;
         }
 
-        nbytes = fread((void*) buffer, sizeof(BYTE), length, file); // check nbytes
+        nbytes = fread((void *)buffer, sizeof(BYTE), length, file); // check nbytes
         if (nbytes == length)
         {
             total_bytes = total_bytes + nbytes;
@@ -211,7 +211,7 @@ int tlv_read_file(const char *filename)
         case TLV_TOKEN_LINE:
             if (json != NULL)
             {
-                json_array_append_new(master_json, json);
+                json_array_append_new(*master_json, json);
                 json = NULL;
             }
             json = json_object();
@@ -230,7 +230,7 @@ int tlv_read_file(const char *filename)
             json_object_set_new(json, value, json_boolean(b));
             break;
         case TLV_TOKEN_STRING:
-            json_object_set_new(json, value, json_string((const char*) buffer));
+            json_object_set_new(json, value, json_string((const char *)buffer));
             break;
         }
     }
@@ -238,23 +238,22 @@ int tlv_read_file(const char *filename)
 FINALLY:
     if (json != NULL)
     {
-        json_array_append_new(master_json, json);
+        json_array_append_new(*master_json, json);
     }
-    jsonString = json_dumps(master_json, JSON_INDENT(2));
+    jsonString = json_dumps(*master_json, JSON_INDENT(2));
     if (jsonString == NULL)
     {
         fprintf(stderr, "Failed to convert JSON object to string\n");
-        json_decref(master_json);
+        json_decref(*master_json);
         return 1;
     }
     printf("All JSON Objects:\n%s\n", jsonString);
     free(jsonString);
-    json_decref(master_json);
+    json_decref(*master_json);
     fclose(file);
     free((void *)buffer);
     return 0;
 }
-
 
 BOOL tlv_finilize()
 {

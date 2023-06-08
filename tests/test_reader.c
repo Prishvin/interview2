@@ -2,6 +2,7 @@
 #include "../include/reader.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <tlv.h>
 
 void test_load_tlv_and_check_keys(void)
 {
@@ -69,7 +70,7 @@ void test_read_json_file(void)
       close(fd_out);
       return;
    }
-
+                                     
    fprintf(fp_in, "{ \"key1\": \"data\" }\n");
    fprintf(fp_in, "{ \"key4\": \"data\" }\n");
    fprintf(fp_in, "{ \"key5\": 2 }\n");
@@ -77,6 +78,7 @@ void test_read_json_file(void)
    fprintf(fp_in, "{ \"key7\": false, \"key8\": \"abcde\"  }\n");
 
    fclose(fp_in);
+   
 
    int ret = hash_init();
    if (ret != ERROR_NONE)
@@ -91,7 +93,8 @@ void test_read_json_file(void)
    CU_ASSERT(ntokens == 6);
    hash_init();
    hash_load_tlv(dic_file, pool, hash);
-   tlv_read_file(output_file);
+   json_t *actual_json = NULL;
+   tlv_read_json(output_file, &actual_json);
 
    hash_destroy();
 

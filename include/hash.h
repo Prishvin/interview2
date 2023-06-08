@@ -9,7 +9,6 @@
 #include <apr-1.0/apr_strings.h> // Apache Portable Runtime library for HashTable
 #include "errors.h"
 #include "../include/common.h"
-#include "../include/tlv.h"
 
 extern apr_pool_t *pool;
 extern apr_hash_t *hash;

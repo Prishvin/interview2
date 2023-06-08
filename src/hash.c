@@ -1,4 +1,5 @@
 #include "../include/hash.h"
+#include "../include/tlv.h"
 
 int hash_key = 0x30;
 apr_pool_t *pool = NULL;
