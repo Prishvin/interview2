@@ -6,49 +6,6 @@ apr_hash_t *hash = NULL;
 apr_pool_t *reverse_pool = NULL;
 apr_hash_t *reverse_hash = NULL;
 
-apr_hash_t *hash_swap()
-{
-    apr_pool_t *reverse_pool = NULL;
-    apr_hash_t *reverse_hash = NULL;
-
-    apr_pool_create(&reverse_pool, NULL);
-    reverse_hash = apr_hash_make(reverse_pool);
-    if (reverse_hash == NULL)
-    {
-        perror("New hash creation error");
-        return NULL;
-    }
-
-    apr_hash_index_t *hi;
-    for (hi = apr_hash_first(pool, hash); hi; hi = apr_hash_next(hi))
-    {
-        const char *key;
-        int *val;
-
-        // Get the current key and value
-        apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
-
-        char *pKey = apr_palloc(reverse_pool, sizeof(int));
-        if (pKey == NULL)
-        {
-            perror("Key allocation error");
-            return NULL;
-        }
-        *pKey = *val;
-
-        char *pVal = apr_pstrdup(reverse_pool, key);
-        if (pVal == NULL)
-        {
-            perror("Value allocation error");
-            return NULL;
-        }
-
-        // In the new hash table, the value becomes the key and the key becomes the value
-        apr_hash_set(reverse_hash, pKey, APR_HASH_KEY_STRING, pVal);
-    }
-
-    return reverse_hash;
-}
 size_t hash_count()
 {
     int n = 0;
@@ -167,13 +124,152 @@ BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
         tlv_write_int(TLV_TOKEN_INT, *val);
     }
 
-    tlv_finilize();
+    tlv_finilize(filename);
     return ERROR_NONE;
 }
 
 BOOL hash_load_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
 {
+    FILE *file = fopen(filename, "rb");
+    apr_hash_clear(hash);
+    if (file == NULL) {
+        perror("Failed to open file");
+        return ERROR_TLV_FILE_OPEN;
+    }
 
-    // TODO
+    char* key_name = NULL;
+    int value;
+
+    while (!feof(file)) {
+        BYTE tag;
+        uint16_t key;
+        uint16_t length;
+
+        // Read tag
+        if (fread(&tag, sizeof(BYTE), 1, file) != 1) {
+            if (feof(file)) break;
+            perror("Failed to read tag");
+            fclose(file);
+            return ERROR_TLV_FORMAT;
+        }
+
+        // Read key
+        if (fread(&key, sizeof(uint16_t), 1, file) != 1) {
+            perror("Failed to read key");
+            fclose(file);
+            return ERROR_TLV_FORMAT;
+        }
+
+        // Read length
+        if (fread(&length, sizeof(uint16_t), 1, file) != 1) {
+            perror("Failed to read length");
+            fclose(file);
+            return ERROR_TLV_FORMAT;
+        }
+
+        // Allocate buffer for data
+        BYTE *buffer = (BYTE *)malloc(length);
+        if (buffer == NULL) {
+            perror("Failed to allocate buffer");
+            fclose(file);
+            return ERROR_TLV_BUFFER_ALLOCATION_FAIL;
+        }
+
+        // Read data
+        if (fread(buffer, sizeof(BYTE), length, file) != length) {
+            perror("Failed to read data");
+            free(buffer);
+            fclose(file);
+            return ERROR_TLV_FORMAT;
+        }
+
+        // Handle the TLV data
+        switch (tag) {
+            case TLV_TOKEN_STRING:
+                key_name = apr_pstrdup(pool, (char *)buffer);
+                break;
+            case TLV_TOKEN_INT:
+                value = *(int *)buffer;
+                if (key_name != NULL) {
+                    hash_add(key_name, value);  // Add to hash
+                    key_name = NULL;  // Reset key_name after adding to hash
+                }
+                break;
+            default:
+                fprintf(stderr, "Unknown tag value\n");
+                free(buffer);
+                fclose(file);
+                return ERROR_TLV_FORMAT;
+        }
+
+        free(buffer);
+    }
+
+    fclose(file);
     return ERROR_NONE;
+}
+
+
+
+
+// Function to swap keys and values in the hash table
+apr_hash_t *hash_swap()
+{
+    apr_pool_create(&reverse_pool, NULL);
+    reverse_hash = apr_hash_make(reverse_pool);
+    if (reverse_hash == NULL)
+    {
+        perror("New hash creation error");
+        return NULL;
+    }
+
+    apr_hash_index_t *hi;
+    for (hi = apr_hash_first(pool, hash); hi; hi = apr_hash_next(hi))
+    {
+        const char *key;
+        int *val;
+
+        // Get the current key and value
+        apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
+
+        char *pKey = apr_palloc(reverse_pool, sizeof(int));
+        if (pKey == NULL)
+        {
+            perror("Key allocation error");
+            return NULL;
+        }
+        *pKey = *val;
+
+        char *pVal = apr_pstrdup(reverse_pool, key);
+        if (pVal == NULL)
+        {
+            perror("Value allocation error");
+            return NULL;
+        }
+
+        // In the new hash table, the value becomes the key and the key becomes the value
+        apr_hash_set(reverse_hash, pKey, sizeof(int), pVal);  // use sizeof(int) instead of APR_HASH_KEY_STRING
+    }
+
+    return reverse_hash;
+}
+
+// Function to initialize reverse hash if it's not initialized yet
+void hash_swap_init() {
+    // call hash_swap function only if reverse_hash is not initialized yet
+    if (reverse_hash == NULL) {
+        reverse_hash = hash_swap();
+    }
+}
+
+// Function to get string key by integer value
+const char* hash_get_value(int key) {
+    // make sure the hash_swap_init function is called first to initialize reverse_hash
+    hash_swap_init();
+
+    // use the integer key to get the string value
+    const char *value = apr_hash_get(reverse_hash, &key, sizeof(int));
+
+    // return the found string value, or NULL if no such key
+    return value;
 }

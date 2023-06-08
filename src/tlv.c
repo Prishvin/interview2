@@ -1,4 +1,6 @@
 #include "../include/tlv.h"
+#include "jansson.h"
+#include "../include/hash.h"
 
 char tlv_file_name[MAX_FILE_LENGTH];
 FILE *tlv_output_file;
@@ -58,7 +60,7 @@ BOOL tlv_write_int(uint16_t key, int value)
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_INT, key, &value, sizeof(int), &encoded_length);
     if (encoded_data == NULL)
     {
-        fclose(tlv_output_file);
+        // fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
     fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_output_file);
@@ -74,7 +76,7 @@ BOOL tlv_write_string(uint16_t key, const char *value)
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_STRING, key, value, strlen(value) + 1, &encoded_length);
     if (encoded_data == NULL)
     {
-        fclose(tlv_output_file);
+        // fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
     fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_output_file);
@@ -90,7 +92,7 @@ BOOL tlv_write_bool(uint16_t key, BOOL value)
     BYTE *encoded_data = encode_tlv(TLV_TOKEN_BOOL, key, &value, sizeof(BOOL), &encoded_length);
     if (encoded_data == NULL)
     {
-        fclose(tlv_output_file);
+        //  fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
     fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_output_file);
@@ -107,7 +109,7 @@ BOOL tlv_write_start()
     BYTE *nl = encode_tlv(TLV_TOKEN_LINE, 0, 0, 0, &encoded_length);
     if (nl == NULL)
     {
-        fclose(tlv_output_file);
+        // fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
     fwrite(nl, sizeof(BYTE), encoded_length, tlv_output_file);
@@ -136,140 +138,106 @@ long tlv_file_size(const char *filename)
 }
 int tlv_read_file(const char *filename)
 {
-    /*
-    // Open the binary file for reading
-    long filesize = tlv_file_size(filename);
-    printf("TLV file size is %d bytes", filesize);
-    if (filesize < TLV_MIN_FILE_SIZE)
-    {
-        fprintf(stderr, "Failed to open the file\n");
-        return ERROR_TLV_FILE_TOO_SMALL;
-    }
     FILE *file = fopen(filename, "rb");
+
     if (file == NULL)
     {
-        fprintf(stderr, "Failed to open the file\n");
+        perror("Failed to open file");
         return ERROR_NO_TLV_FILE;
     }
 
-    // Allocate a buffer to hold the read data
+    json_t *json_obj = json_object(); // Initialize the JSON object
 
-    BYTE *buffer = (BYTE *)malloc(READ_BUFFER_LENTH);
-    if (buffer == NULL)
+    while (!feof(file))
     {
-        fprintf(stderr, "Failed to allocate memory for buffer\n");
-        fclose(file);
-        return ERROR_TLV_BUFFER_ALLOCATION_FAIL;
-    }
+        BYTE tag;
+        uint16_t key, length;
 
-    // Read N bytes from the file
-    long total_bytes = 0;
-    json_t *json = NULL;
-    BYTE token;
-    uint16_t length;
-    uint16_t key;
-    BYTE nbytes;
-    char *jsonString;
-    while (total_bytes < filesize)
-    {
-        nbytes = fread(buffer, sizeof(BYTE), 1, file); // read tag
-        if (nbytes > 0)
+        if (fread(&tag, sizeof(BYTE), 1, file) != 1)
         {
-            token = buffer[0];
-            total_bytes = total_bytes + nbytes;
-        }
-        else
-        {
-            goto FINALLY;
+            if (feof(file))
+                break;
+            perror("Failed to read tag");
+            fclose(file);
+            return ERROR_TLV_FORMAT;
         }
 
-        nbytes = fread(buffer, 1, sizeof(uint16_t), file); // read key
-        if (nbytes > 0)
+        if (fread(&key, sizeof(uint16_t), 1, file) != 1)
         {
-            memcpy(&key, buffer, sizeof(key));
-            total_bytes = total_bytes + nbytes;
-        }
-        else
-        {
-            goto FINALLY;
+            perror("Failed to read key");
+            fclose(file);
+            return ERROR_TLV_FORMAT;
         }
 
-        nbytes = fread(buffer, 1, sizeof(uint16_t), file); // read data length
-        if (nbytes > 0)
+        if (fread(&length, sizeof(uint16_t), 1, file) != 1)
         {
-            memcpy(&length, buffer, sizeof(length));
-            total_bytes = total_bytes + nbytes;
-        }
-        else
-        {
-            goto FINALLY;
+            perror("Failed to read length");
+            fclose(file);
+            return ERROR_TLV_FORMAT;
         }
 
-        nbytes = fread(buffer, sizeof(BYTE), length, file); // check nbytes
-        if (nbytes == length)
+        // Allocate buffer for data
+        BYTE *buffer = (BYTE *)malloc(length);
+        if (buffer == NULL)
         {
-            total_bytes = total_bytes + nbytes;
-        }
-        else
-        {
-            goto FINALLY;
+            perror("Failed to allocate buffer");
+            fclose(file);
+            return ERROR_TLV_BUFFER_ALLOCATION_FAIL;
         }
 
-        switch (token)
+        if (fread(buffer, sizeof(BYTE), length, file) != length)
         {
-        case TLV_TOKEN_LINE:
-            if (json != NULL)
-            {
-                jsonString = json_dumps(json, JSON_INDENT(2));
-                if (jsonString == NULL)
-                {
-                    fprintf(stderr, "Failed to convert JSON object to string\n");
-                    json_decref(json);
-                    return 1;
-                }
-                printf("JSON Object:\n%s\n", jsonString);
-                free(jsonString);
-                json_decref(json);
-                json = NULL;
-            }
-            json = json_object();
-            if (json == NULL)
-            {
-                fprintf(stderr, "Failed to create JSON object\n");
-                goto FINALLY;
-            }
-            break;
+            perror("Failed to read data");
+            free(buffer);
+            fclose(file);
+            return ERROR_TLV_FORMAT;
+        }
+
+        // Start handling the TLV data
+        const char *key_name = hash_get_value((int)key);
+        json_t *value;
+
+        switch (tag)
+        {
         case TLV_TOKEN_INT:
-            int *n = (int *)buffer;
-            json_object_set_new(json, "age", json_integer(&n));
+            value = json_integer(*(int *)buffer);
             break;
         case TLV_TOKEN_BOOL:
-            BOOL b = (BOOL)buffer;
-            json_object_set_new(json, "isStudent", json_boolean(b));
+            value = json_boolean(*(BOOL *)buffer);
             break;
         case TLV_TOKEN_STRING:
-
-            json_object_set_new(json, "name", json_string(buffer));
+            value = json_string((char *)buffer);
             break;
+        default:
+            fprintf(stderr, "Unknown tag value\n");
+            free(buffer);
+            fclose(file);
+            return ERROR_TLV_FORMAT;
         }
+
+        json_object_set_new(json_obj, key_name, value);
+
+        free(buffer);
     }
 
-    fclose(file);
-    free(buffer);
-    free(jsonString);
-    json_decref(json);
+    char *json_string = json_dumps(json_obj, JSON_INDENT(2)); // Convert to formatted string
+    printf("%s\n", json_string);                              // Print the JSON string
 
+    // Clean up
+    free(json_string);
+    json_decref(json_obj);
+
+    fclose(file);
     return ERROR_NONE;
-FINALLY:
-    json_decref(json);
-    free(jsonString);
-    return ERROR_TLV_FORMAT;*/
-    return 0;
 }
 BOOL tlv_finilize()
 {
     int result = ERROR_NONE;
     if (tlv_output_file != NULL)
+    {
+
         result = fclose(tlv_output_file);
+        tlv_output_file = NULL;
+    }
     return result;
 }

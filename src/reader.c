@@ -7,6 +7,7 @@
 #include "../include/tlv.h"
 #include <assert.h>
 #include "../include/reader.h"
+#include <unistd.h>
 
 #define MAX_LINE_LENGTH 2048
 
@@ -15,7 +16,7 @@ void iterate_json_object(json_t *json)
     const char *key;
     const json_t *value;
     tlv_write_start();
-    hash_print();
+    // hash_print();
     json_object_foreach(json, key, value)
     {
         int key_value = hash_get_key(key);
@@ -62,29 +63,35 @@ void iterate_json_object(json_t *json)
     }
 }
 
-void read_json_part(void* arg)
+void read_json_part(void *arg)
 {
-    if(arg == NULL)
+    if (arg == NULL)
         return;
-    FilePart* part = (FilePart*) arg;
-    FILE* file = fopen(part->file_name, "r");
-    if(file == NULL)
+    FilePart *part = (FilePart *)arg;
+    FILE *file = fopen(part->file_name, "r");
+    if (file == NULL)
     {
         printf("Thread %ld, opening file %s fail", part->id, part->file_name);
     }
-
 }
-int read_json_file(const char *file_name, size_t *ntokens)
+int read_json_file(const char *input_file, const char *output_file, const char *dic_file, size_t *ntokens)
 {
-    FILE *file = fopen(file_name, "r");
+    FILE *file = fopen(input_file, "r");
     if (file == NULL)
     {
-        printf("File '%s' not found.\n", file_name);
+        printf("File '%s' not found.\n", input_file);
         return ERROR_JSON_FILE_NOT_FOUND;
     }
+    int ret = tlv_init_file(output_file);
+    if (ret != ERROR_NONE)
+    {
+        printf("TLV file opening failed.\n");
+        return ret;
+    }
+
     json_error_t error;
 
-    //long file_size = get_file_size(file_name);
+    // long file_size = get_file_size(file_name);
 
     char line[MAX_LINE_LENGTH];
     // if we would to read a file, which contains long lines, we would allocated line buffer manually
@@ -113,6 +120,12 @@ int read_json_file(const char *file_name, size_t *ntokens)
         printf("%s\n", line);
     }
     *ntokens = hash_count();
+    ret = hash_save_tlv(dic_file, pool, hash);
+    if (ret != ERROR_NONE)
+    {
+        printf("TLV file opening failed.\n");
+        return ret;
+    }
     printf("hash records %zu\n", *ntokens);
     tlv_finilize();
     fclose(file);
@@ -120,13 +133,12 @@ int read_json_file(const char *file_name, size_t *ntokens)
 }
 #ifndef TEST_FLAG
 
-
 int main(int argc, char *argv[])
 {
     char *input_file = NULL;
     char *output_tlv_file = "output.tlv";
     char *output_dictionary_file = "dictionary.tlv";
-    //size_t n_threads = 4;
+    // size_t n_threads = 4;
 
     for (int i = 1; i < argc; i++)
     {
@@ -144,7 +156,7 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "--nrthreads") == 0)
         {
-            //n_threads = atoi(argv[++i]);
+            // n_threads = atoi(argv[++i]);
         }
     }
 
@@ -161,22 +173,11 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    ret = tlv_init_file(output_tlv_file);
-    if (ret != ERROR_NONE)
-    {
-        printf("TLV file opening failed.\n");
-        return ret;
-    }
     size_t nkeys;
-    read_json_file(input_file, &nkeys);
+    read_json_file(input_file, output_tlv_file, output_dictionary_file, &nkeys);
 
     // write dictionary to tlv file
-    ret = hash_save_tlv(output_dictionary_file, pool, hash);
-    if (ret != ERROR_NONE)
-    {
-        printf("TLV file opening failed.\n");
-        return ret;
-    }
+
     hash_destroy();
 
     return 0;

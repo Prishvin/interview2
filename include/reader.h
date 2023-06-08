@@ -11,4 +11,4 @@
 
 void iterate_json_object(json_t *json);
 void read_json_part(void* arg);
-int read_json_file(const char *file_name, size_t *ntokens);
+int read_json_file(const char *input_file, const char *output_file, const char *dic_file, size_t *ntokens);

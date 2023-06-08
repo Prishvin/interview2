@@ -28,4 +28,8 @@ BOOL hash_load_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash);
 BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash);
 size_t hash_count();
 
+apr_hash_t *hash_swap();
+void hash_swap_init();
+const char* hash_get_value(int key);
+
 #endif
