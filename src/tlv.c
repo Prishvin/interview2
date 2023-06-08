@@ -157,6 +157,7 @@ int tlv_read_json(const char *filename, json_t **master_json)
     uint16_t length;
     uint16_t key;
     BYTE nbytes;
+    int *number = NULL;
     char *jsonString;
     const char *value;
     while (total_bytes < filesize)
@@ -222,8 +223,8 @@ int tlv_read_json(const char *filename, json_t **master_json)
             }
             break;
         case TLV_TOKEN_INT:
-            int *n = (int *)buffer;
-            json_object_set_new(json, value, json_integer(*n));
+            number = (int *)buffer;
+            json_object_set_new(json, value, json_integer(*number));
             break;
         case TLV_TOKEN_BOOL:
             BOOL b = (BOOL)buffer[0];
