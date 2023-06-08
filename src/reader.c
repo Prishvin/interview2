@@ -8,6 +8,7 @@
 #include <assert.h>
 #include "../include/reader.h"
 #include <unistd.h>
+#include "../include/reader_test.h"
 
 #define MAX_LINE_LENGTH 2048
 
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
     char *output_tlv_file = "output.tlv";
     char *output_dictionary_file = "dictionary.tlv";
     // size_t n_threads = 4;
-
+    BOOL run_read_test = FALSE;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--input") == 0)
@@ -156,10 +157,16 @@ int main(int argc, char *argv[])
         {
             output_dictionary_file = argv[++i];
         }
-        else if (strcmp(argv[i], "--nrthreads") == 0)
+          else if (strcmp(argv[i], "--test") == 0)
         {
-            // n_threads = atoi(argv[++i]);
+            run_read_test = 1;
         }
+    }
+
+    if (run_read_test)
+    {
+        reader_test();  // Call your test function here
+        return 0;
     }
 
     if (!input_file)

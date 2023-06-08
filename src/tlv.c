@@ -247,9 +247,9 @@ FINALLY:
         json_decref(*master_json);
         return 1;
     }
-    printf("All JSON Objects:\n%s\n", jsonString);
+    //printf("All JSON Objects:\n%s\n", jsonString);
     free(jsonString);
-    json_decref(*master_json);
+    
     fclose(file);
     free((void *)buffer);
     return 0;
