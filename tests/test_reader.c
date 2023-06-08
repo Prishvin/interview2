@@ -3,6 +3,47 @@
 #include <stdio.h>
 #include <unistd.h>
 
+void test_load_tlv_and_check_keys(void)
+{
+   // Create temporary TLV file
+   char tlv_file[] = "/tmp/tlvfile-XXXXXX";
+
+   int fd_tlv = mkstemp(tlv_file);
+
+   if (fd_tlv == -1)
+   {
+      // Handle error
+      return;
+   }
+
+   // Assuming hash is already initialized and filled
+   hash_save_tlv(tlv_file, pool, hash);
+   // Clean up hash and pool
+   hash_destroy();
+
+   // Reinitialize hash and pool
+   int ret = hash_init();
+   if (ret != ERROR_NONE)
+   {
+      printf("Hash table re-init failed.\n");
+      return;
+   }
+
+   // Load hash from the TLV file
+   hash_load_tlv(tlv_file, pool, hash);
+
+   // Check specific keys
+   CU_ASSERT_TRUE(hash_key_present("key1"));
+   CU_ASSERT_TRUE(hash_key_present("key4"));
+   CU_ASSERT_TRUE(hash_key_present("key5"));
+
+   // Add more assertions as needed
+
+   // Clean up
+   remove(tlv_file);
+   hash_destroy();
+}
+
 void test_read_json_file(void)
 {
    // Create temporary JSON files
@@ -50,7 +91,14 @@ void test_read_json_file(void)
 
    // Add assertions
    CU_ASSERT(ntokens == 3); // Assuming 1 token is correctly identified
-   // Add more assertions as needed
+   hash_init();
+   hash_load_tlv(dic_file, pool, hash);
+
+   // Check specific keys
+   CU_ASSERT_TRUE(hash_key_present("key1"));
+   CU_ASSERT_TRUE(hash_key_present("key4"));
+   CU_ASSERT_TRUE(hash_key_present("key5"));
+   CU_ASSERT_TRUE(!hash_key_present("keyX"));
 
    // Clean up
    remove(input_file);
