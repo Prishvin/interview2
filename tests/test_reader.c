@@ -65,16 +65,16 @@ void test_read_json_file(void)
 
    if (fp_in == NULL)
    {
-      // Handle error
       close(fd_in);
       close(fd_out);
       return;
    }
 
-   // Let's write some data to input and dictionary files
    fprintf(fp_in, "{ \"key1\": \"data\" }\n");
    fprintf(fp_in, "{ \"key4\": \"data\" }\n");
    fprintf(fp_in, "{ \"key5\": 2 }\n");
+   fprintf(fp_in, "{ \"key6\": true }\n");
+   fprintf(fp_in, "{ \"key7\": false }\n");
 
    fclose(fp_in);
 
@@ -85,12 +85,10 @@ void test_read_json_file(void)
       return;
    }
 
-   // Call function under test
    size_t ntokens;
    read_json_file(input_file, output_file, dic_file, &ntokens);
 
-   // Add assertions
-   CU_ASSERT(ntokens == 3); // Assuming 1 token is correctly identified
+   CU_ASSERT(ntokens == 5); 
    hash_init();
    hash_load_tlv(dic_file, pool, hash);
 
@@ -98,6 +96,8 @@ void test_read_json_file(void)
    CU_ASSERT_TRUE(hash_key_present("key1"));
    CU_ASSERT_TRUE(hash_key_present("key4"));
    CU_ASSERT_TRUE(hash_key_present("key5"));
+   CU_ASSERT_TRUE(hash_key_present("key6"));
+   CU_ASSERT_TRUE(hash_key_present("key7"));
    CU_ASSERT_TRUE(!hash_key_present("keyX"));
 
    // Clean up
@@ -106,7 +106,6 @@ void test_read_json_file(void)
    remove(dic_file);
 }
 
-// Rest of your main() function follows...
 
 int main()
 {
