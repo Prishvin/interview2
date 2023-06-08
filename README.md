@@ -18,3 +18,7 @@ the expected input file format:
 supported types: string, int, boolean
 
 test read from tlv file by calling ./reader --test
+
+Libary dependencies: 
+Apache Portable Runtime.
+libjansson
