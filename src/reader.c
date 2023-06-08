@@ -12,11 +12,12 @@
 
 #define MAX_LINE_LENGTH 2048
 
-void iterate_json_object(json_t *json)
+void iterate_json_object(json_t *json,  FILE* tlv_json_file )
 {
     const char *key;
     const json_t *value;
-    tlv_write_start();
+
+    tlv_write_start_line(tlv_json_file);
     // hash_print();
     json_object_foreach(json, key, value)
     {
@@ -38,19 +39,19 @@ void iterate_json_object(json_t *json)
         {
 
             const char *str_value = json_string_value(value);
-            tlv_write_string(key_value, str_value);
+            tlv_write_string(key_value, str_value, tlv_json_file);
             printf("Value (string): %s\n", str_value);
         }
         else if (json_is_integer(value))
         {
             int int_value = json_integer_value(value);
-            tlv_write_int(key_value, int_value);
+            tlv_write_int(key_value, int_value, tlv_json_file);
             printf("Value (integer): %d\n", int_value);
         }
         else if (json_is_boolean(value))
         {
             BOOL bool_value = json_boolean_value(value);
-            tlv_write_bool(key_value, bool_value);
+            tlv_write_bool(key_value, bool_value, tlv_json_file);
             printf("Value (boolean): %s\n", bool_value ? "true" : "false");
         }
         else if (json_is_null(value))
@@ -75,15 +76,16 @@ void read_json_part(void *arg)
         printf("Thread %ld, opening file %s fail", part->id, part->file_name);
     }
 }
-int read_json_file(const char *input_file, const char *output_file, const char *dic_file, size_t *ntokens)
+int read_json_file(const char *input_file, const char *output_file_name, const char *dic_file, size_t *ntokens)
 {
     FILE *file = fopen(input_file, "r");
+    FILE* output_file = NULL;
     if (file == NULL)
     {
         printf("File '%s' not found.\n", input_file);
         return ERROR_JSON_FILE_NOT_FOUND;
     }
-    int ret = tlv_init_file(output_file);
+    int ret = tlv_init_file(output_file_name, &output_file);
     if (ret != ERROR_NONE)
     {
         printf("TLV file opening failed.\n");
@@ -115,13 +117,13 @@ int read_json_file(const char *input_file, const char *output_file, const char *
             return ERROR_JSON_PARSING_ERROR;
         }
 
-        iterate_json_object(json);
+        iterate_json_object(json, output_file);
 
         json_decref(json);
         printf("%s\n", line);
     }
     printf("hash records %zu\n", *ntokens);
-    tlv_finilize();
+    tlv_finilize(output_file);
 
     *ntokens = hash_count();
     ret = hash_save_tlv(dic_file, pool, hash);

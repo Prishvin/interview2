@@ -9,6 +9,6 @@
 
 #define MAX_LINE_LENGTH 2048
 
-void iterate_json_object(json_t *json);
-void read_json_part(void* arg);
-int read_json_file(const char *input_file, const char *output_file, const char *dic_file, size_t *ntokens);
+void iterate_json_object(json_t *json, FILE *tlv_json_file);
+void read_json_part(void *arg);
+int read_json_file(const char *input_file, const char *output_file_name, const char *dic_file, size_t *ntokens);

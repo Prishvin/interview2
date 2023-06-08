@@ -4,46 +4,70 @@
 #include <unistd.h>
 #include <tlv.h>
 
-void test_load_tlv_and_check_keys(void)
+void test_tlv_rw(void)
 {
    // Create temporary TLV file
    char tlv_file[] = "/tmp/tlvfile-XXXXXX";
-
    int fd_tlv = mkstemp(tlv_file);
-
    if (fd_tlv == -1)
    {
       // Handle error
       return;
    }
 
-   // Assuming hash is already initialized and filled
-   hash_save_tlv(tlv_file, pool, hash);
-   // Clean up hash and pool
-   hash_destroy();
+   FILE *file;
+   BOOL res = tlv_init_file(tlv_file, &file);
+   CU_ASSERT_TRUE(res == ERROR_NONE);
 
-   // Reinitialize hash and pool
-   int ret = hash_init();
-   if (ret != ERROR_NONE)
-   {
-      printf("Hash table re-init failed.\n");
-      return;
-   }
+   // write data to TLV file
+   int int_val = 123;
+   BOOL bool_val = true;
+   const char *str_val = "Hello World!";
+   tlv_write_int(1, int_val, file);
+   tlv_write_bool(2, bool_val, file);
+   tlv_write_string(3, str_val, file);
 
-   // Load hash from the TLV file
-   hash_load_tlv(tlv_file, pool, hash);
+   // close the file
+   tlv_finilize(file);
 
-   // Check specific keys
-   CU_ASSERT_TRUE(hash_key_present("key1"));
-   CU_ASSERT_TRUE(hash_key_present("key4"));
-   CU_ASSERT_TRUE(hash_key_present("key5"));
+   // reopen the file for reading
+   FILE *read_file = fopen(tlv_file, "rb");
+   CU_ASSERT_PTR_NOT_NULL(read_file);
 
-   // Add more assertions as needed
+   // read and compare the data
+   BYTE buffer[1024];
+   fread(buffer, sizeof(BYTE), 1, read_file);        
+   CU_ASSERT_TRUE(buffer[0] == TLV_TOKEN_INT);         
+   fread(buffer, sizeof(uint16_t), 1, read_file);       
+   CU_ASSERT_TRUE(buffer[0] == 1);                     
+   fread(buffer, sizeof(uint16_t), 1, read_file);       
+   fread(buffer, sizeof(BYTE), sizeof(int), read_file);
+   CU_ASSERT_TRUE(*(int *)buffer == int_val);           // check value
 
-   // Clean up
+   fread(buffer, sizeof(BYTE), 1, read_file);           
+   CU_ASSERT_TRUE(buffer[0] == TLV_TOKEN_BOOL);         
+   fread(buffer, sizeof(uint16_t), 1, read_file);     
+   CU_ASSERT_TRUE(buffer[0] == 2);                      
+   fread(buffer, sizeof(uint16_t), 1, read_file);       
+   fread(buffer, sizeof(BYTE), sizeof(BOOL), read_file); 
+   CU_ASSERT_TRUE(buffer[0] == bool_val);                 // check value
+
+   fread(buffer, sizeof(BYTE), 1, read_file);                  
+   CU_ASSERT_TRUE(buffer[0] == TLV_TOKEN_STRING);              
+   fread(buffer, sizeof(uint16_t), 1, read_file);              
+   CU_ASSERT_TRUE(buffer[0] == 3);                              
+   fread(buffer, sizeof(uint16_t), 1, read_file);               
+   fread(buffer, sizeof(BYTE), strlen(str_val) + 1, read_file); 
+   CU_ASSERT_TRUE(strcmp((const char *)buffer, str_val) == 0);  // check value
+
+   // close the read file
+   fclose(read_file);
+
+   // remove the file
    remove(tlv_file);
-   hash_destroy();
 }
+
+
 
 void test_read_json_file(void)
 {
@@ -70,7 +94,7 @@ void test_read_json_file(void)
       close(fd_out);
       return;
    }
-                                     
+
    fprintf(fp_in, "{ \"key1\": \"data\" }\n");
    fprintf(fp_in, "{ \"key4\": \"data\" }\n");
    fprintf(fp_in, "{ \"key5\": 2 }\n");
@@ -78,7 +102,6 @@ void test_read_json_file(void)
    fprintf(fp_in, "{ \"key7\": false, \"key8\": \"abcde\"  }\n");
 
    fclose(fp_in);
-   
 
    int ret = hash_init();
    if (ret != ERROR_NONE)
@@ -115,22 +138,39 @@ void test_read_json_file(void)
 
 int main()
 {
-   CU_pSuite pSuite = NULL;
+   CU_pSuite tlvSuite = NULL;
+   CU_pSuite jsonSuite = NULL;
 
    /* initialize the CUnit test registry */
    if (CUE_SUCCESS != CU_initialize_registry())
       return CU_get_error();
 
-   /* add a suite to the registry */
-   pSuite = CU_add_suite("json_test_suite", 0, 0);
-   if (NULL == pSuite)
+   /* add the tlv_test_suite to the registry */
+   tlvSuite = CU_add_suite("tlv_test_suite", 0, 0);
+   if (NULL == tlvSuite)
    {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
-   /* add the tests to the suite */
-   if ((NULL == CU_add_test(pSuite, "test_read_json_file", test_read_json_file)))
+   /* add the tests to the tlv_test_suite */
+   if ((NULL == CU_add_test(tlvSuite, "test_tlv_rw", test_tlv_rw)) ||
+       (NULL == CU_add_test(tlvSuite, "test_read_json_file", test_read_json_file)))
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+   /* add the json_test_suite to the registry */
+   jsonSuite = CU_add_suite("json_test_suite", 0, 0);
+   if (NULL == jsonSuite)
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+   /* add the test_read_json_file to the json_test_suite */
+   if (NULL == CU_add_test(jsonSuite, "test_read_json_file", test_read_json_file))
    {
       CU_cleanup_registry();
       return CU_get_error();

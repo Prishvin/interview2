@@ -105,7 +105,8 @@ void hash_add(const char *key, int value)
 BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
 {
 
-    if (tlv_init_file(filename) != ERROR_NONE)
+    FILE* tlv_json_file;
+    if (tlv_init_file(filename, &tlv_json_file) != ERROR_NONE)
         return ERROR_TLV_FILE_OPEN;
 
     // Write hash map to file
@@ -119,11 +120,11 @@ BYTE hash_save_tlv(const char *filename, apr_pool_t *pool, apr_hash_t *hash)
         apr_hash_this(hi, (const void **)&key, NULL, (void **)&val);
 
         // We use keys as strings and values as integers
-        tlv_write_string(TLV_TOKEN_STRING, key);
-        tlv_write_int(TLV_TOKEN_INT, *val);
+        tlv_write_string(TLV_TOKEN_STRING, key, tlv_json_file);
+        tlv_write_int(TLV_TOKEN_INT, *val, tlv_json_file);
     }
 
-    tlv_finilize(filename);
+    tlv_finilize(tlv_json_file);
     return ERROR_NONE;
 }
 

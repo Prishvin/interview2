@@ -32,15 +32,15 @@ BYTE *encode_tlv(uint8_t tag, uint16_t key, const void *data, uint16_t data_leng
     return encoded_data;
 }
 
-BOOL tlv_init_file(const char *filename)
+BOOL tlv_init_file(const char *file_name, FILE** file)
 {
 
-    if (filename != NULL)
+    if (file_name != NULL)
     {
-        strcpy(tlv_file_name, filename); // TODO check size
-        printf("Opening tlv file for writing [%s]\n", tlv_file_name);
-        tlv_output_file = fopen(tlv_file_name, "wb");
-        if (tlv_output_file == NULL)
+        strcpy(tlv_file_name, file_name); // TODO check size
+        printf("Opening tlv file for writing [%s]\n", file_name);
+        *file = fopen(tlv_file_name, "wb");
+        if (*file == NULL)
             return ERROR_TLV_FILE_OPEN;
         else
             return ERROR_NONE;
@@ -50,7 +50,7 @@ BOOL tlv_init_file(const char *filename)
         return ERROR_NO_TLV_FILE;
     }
 }
-BOOL tlv_write_int(uint16_t key, int value)
+BOOL tlv_write_int(uint16_t key, int value, FILE *file)
 {
 
     uint16_t encoded_length;
@@ -60,11 +60,11 @@ BOOL tlv_write_int(uint16_t key, int value)
         // fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_output_file);
+    fwrite(encoded_data, sizeof(BYTE), encoded_length, file);
     free(encoded_data);
     return ERROR_NONE;
 }
-BOOL tlv_write_string(uint16_t key, const char *value)
+BOOL tlv_write_string(uint16_t key, const char *value, FILE *file)
 {
 
     uint16_t encoded_length;
@@ -74,11 +74,11 @@ BOOL tlv_write_string(uint16_t key, const char *value)
         // fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_output_file);
+    fwrite(encoded_data, sizeof(BYTE), encoded_length, file);
     free(encoded_data);
     return ERROR_NONE;
 }
-BOOL tlv_write_bool(uint16_t key, BOOL value)
+BOOL tlv_write_bool(uint16_t key, BOOL value, FILE *file)
 {
 
     uint16_t encoded_length;
@@ -88,12 +88,12 @@ BOOL tlv_write_bool(uint16_t key, BOOL value)
         //  fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(encoded_data, sizeof(BYTE), encoded_length, tlv_output_file);
+    fwrite(encoded_data, sizeof(BYTE), encoded_length, file);
     free(encoded_data);
     return ERROR_NONE;
 }
 
-BOOL tlv_write_start()
+BOOL tlv_write_start_line(FILE *file)
 {
 
     uint16_t encoded_length;
@@ -103,7 +103,7 @@ BOOL tlv_write_start()
         // fclose(tlv_output_file);
         return ERROR_TLV_MALLOC;
     }
-    fwrite(nl, sizeof(BYTE), encoded_length, tlv_output_file);
+    fwrite(nl, sizeof(BYTE), encoded_length, file);
     free(nl);
     return ERROR_NONE;
 }
@@ -152,7 +152,7 @@ int tlv_read_json(const char *filename, json_t **master_json)
 
     long total_bytes = 0;
     json_t *json = NULL;
-   *master_json = json_array();
+    *master_json = json_array();
     BYTE token;
     uint16_t length;
     uint16_t key;
@@ -247,22 +247,22 @@ FINALLY:
         json_decref(*master_json);
         return 1;
     }
-    //printf("All JSON Objects:\n%s\n", jsonString);
+    // printf("All JSON Objects:\n%s\n", jsonString);
     free(jsonString);
-    
+
     fclose(file);
     free((void *)buffer);
     return 0;
 }
 
-BOOL tlv_finilize()
+BOOL tlv_finilize(FILE *file)
 {
     int result = ERROR_NONE;
-    if (tlv_output_file != NULL)
+    if (file != NULL)
     {
 
-        result = fclose(tlv_output_file);
-        tlv_output_file = NULL;
+        result = fclose(file);
+        file = NULL;
     }
     return result;
 }
