@@ -69,7 +69,7 @@ int reader_test()
 
     // Read TLV back to JSON
     json_t *read_back_json = NULL;
-    printf("TVL json data:\n");
+    
     tlv_read_json(output_file, &read_back_json);
 
     // Print JSON read back
@@ -92,12 +92,7 @@ int reader_test()
             json_decref(original_json);
     }
 
-    printf("Original data:\n");
-    printf("%s", json1);
-    printf("%s", json2);
-    printf("%s", json3);
-    printf("%s", json4);
-    printf("%s", json5);
+
     // Cleanup
     free(json_str);
     remove(temp_file);

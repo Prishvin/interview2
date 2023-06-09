@@ -17,8 +17,8 @@ void test_read_back(void)
    mkstemp(dic_file);
 
    // JSON data to be written to file
-   char *json1 = "{ \"key1\": \"data\" }\n";
-   char *json2 = "{ \"key4\": \"data\" }\n";
+   char *json1 = "{ \"key1\": \"data 1\" }\n";
+   char *json2 = "{ \"key4\": \"data 2\" }\n";
    char *json3 = "{ \"key5\": 2 }\n";
    char *json4 = "{ \"key6\": true }\n";
    char *json5 = "{ \"key7\": false, \"key8\": \"abcde\"  }\n";

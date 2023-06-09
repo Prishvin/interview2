@@ -11,8 +11,19 @@
 #include "../include/reader_test.h"
 
 #define MAX_LINE_LENGTH 2048
+#define PRINT_DEBUG_NO
 
-void iterate_json_object(json_t *json,  FILE* tlv_json_file )
+void my_print(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+#ifdef PRINT_DEBUG
+    vprintf(format, args);
+#endif
+    va_end(args);
+}
+
+void iterate_json_object(json_t *json, FILE *tlv_json_file)
 {
     const char *key;
     const json_t *value;
@@ -27,12 +38,12 @@ void iterate_json_object(json_t *json,  FILE* tlv_json_file )
             key_value = hash_key;
             hash_add(key, key_value);
 
-            printf("New hash %d - %s\n", hash_key, key);
+            my_print("New hash %d - %s\n", hash_key, key);
             hash_key++;
         }
         else
         {
-            printf("Duplicate %s\n", key);
+            my_print("Duplicate %s\n", key);
         }
         // Check the type of the value and handle accordingly
         if (json_is_string(value))
@@ -40,55 +51,45 @@ void iterate_json_object(json_t *json,  FILE* tlv_json_file )
 
             const char *str_value = json_string_value(value);
             tlv_write_string(key_value, str_value, tlv_json_file);
-            printf("Value (string): %s\n", str_value);
+            my_print("Value (string): %s\n", str_value);
         }
         else if (json_is_integer(value))
         {
             int int_value = json_integer_value(value);
             tlv_write_int(key_value, int_value, tlv_json_file);
-            printf("Value (integer): %d\n", int_value);
+            my_print("Value (integer): %d\n", int_value);
         }
         else if (json_is_boolean(value))
         {
             BOOL bool_value = json_boolean_value(value);
             tlv_write_bool(key_value, bool_value, tlv_json_file);
-            printf("Value (boolean): %s\n", bool_value ? "true" : "false");
+            my_print("Value (boolean): %s\n", bool_value ? "true" : "false");
         }
         else if (json_is_null(value))
         {
-            printf("Value: null\n");
+            my_print("Value: null\n");
         }
         else
         {
-            printf("Value: (unknown type)\n");
+            my_print("Value: (unknown type)\n");
         }
     }
 }
 
-void read_json_part(void *arg)
-{
-    if (arg == NULL)
-        return;
-    FilePart *part = (FilePart *)arg;
-    FILE *file = fopen(part->file_name, "r");
-    if (file == NULL)
-    {
-        printf("Thread %ld, opening file %s fail", part->id, part->file_name);
-    }
-}
+
 int read_json_file(const char *input_file, const char *output_file_name, const char *dic_file, size_t *ntokens)
 {
     FILE *file = fopen(input_file, "r");
-    FILE* output_file = NULL;
+    FILE *output_file = NULL;
     if (file == NULL)
     {
-        printf("File '%s' not found.\n", input_file);
+        my_print("File '%s' not found.\n", input_file);
         return ERROR_JSON_FILE_NOT_FOUND;
     }
     int ret = tlv_init_file(output_file_name, &output_file);
     if (ret != ERROR_NONE)
     {
-        printf("TLV file opening failed.\n");
+        my_print("TLV file opening failed.\n");
         return ret;
     }
 
@@ -120,9 +121,9 @@ int read_json_file(const char *input_file, const char *output_file_name, const c
         iterate_json_object(json, output_file);
 
         json_decref(json);
-        printf("%s\n", line);
+        my_print("%s\n", line);
     }
-    printf("hash records %zu\n", *ntokens);
+    my_print("hash records %zu\n", *ntokens);
     tlv_finilize(output_file);
 
     *ntokens = hash_count();
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
         {
             output_dictionary_file = argv[++i];
         }
-          else if (strcmp(argv[i], "--test") == 0)
+        else if (strcmp(argv[i], "--test") == 0)
         {
             run_read_test = 1;
         }
@@ -167,7 +168,7 @@ int main(int argc, char *argv[])
 
     if (run_read_test)
     {
-        reader_test();  // Call your test function here
+        reader_test(); // Call your test function here
         return 0;
     }
 
@@ -185,9 +186,13 @@ int main(int argc, char *argv[])
     }
 
     size_t nkeys;
-    read_json_file(input_file, output_tlv_file, output_dictionary_file, &nkeys);
+    ret = read_json_file(input_file, output_tlv_file, output_dictionary_file, &nkeys);
+    if(ret == ERROR_NONE)
+        printf("JSON convertion success!\n");
+    else
+        printf("JSON conversion error -%d.\n", ret);
 
-    // write dictionary to tlv file
+
 
     hash_destroy();
 

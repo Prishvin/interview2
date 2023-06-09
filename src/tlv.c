@@ -128,7 +128,7 @@ long tlv_file_size(const char *filename)
 int tlv_read_json(const char *filename, json_t **master_json)
 {
     long filesize = tlv_file_size(filename);
-    printf("----------------------------------------------------------\n");
+
     printf("TLV file %s size is %ld bytes\n", filename, filesize);
     if (filesize < TLV_MIN_FILE_SIZE)
     {
