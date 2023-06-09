@@ -27,7 +27,8 @@ int reader_test()
     char *json3 = "{ \"key5\": 2 }\n";
     char *json4 = "{ \"key6\": true }\n";
     char *json5 = "{ \"key7\": false, \"key8\": \"abcde\"  }\n";
-
+    char *original_jsons[] = {json1, json2, json3, json4, json5};
+    size_t json_count = sizeof(original_jsons) / sizeof(original_jsons[0]);
     fprintf(fp, "%s", json1);
     fprintf(fp, "%s", json2);
     fprintf(fp, "%s", json3);
@@ -73,8 +74,24 @@ int reader_test()
 
     // Print JSON read back
     char *json_str = json_dumps(read_back_json, 0);
-    printf("JSON Read from file: %s\n", json_str);
-    
+    printf("JSON Read back from tvl file: %s\n", json_str);
+
+    for (int i = 0; i < json_count; i++)
+    {
+        json_t *original_json = json_loads(original_jsons[i], 0, NULL);
+        json_t *read_back= json_array_get(read_back_json, i);
+        char* original_str = json_dumps(original_json, JSON_ENCODE_ANY);
+        char* read_str = json_dumps(read_back, JSON_ENCODE_ANY);
+        if (json_equal(original_json, read_back))
+            printf("Original and read JSON data are the same.%s %s\n", original_str, read_str);
+        else
+            printf("Original and read JSON data are NOT the same. %s %s\n", original_str, read_str);
+
+        // Decrease reference count of original json
+        if (original_json != NULL)
+            json_decref(original_json);
+    }
+
     printf("Original data:\n");
     printf("%s", json1);
     printf("%s", json2);
