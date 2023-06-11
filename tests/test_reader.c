@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <tlv.h>
 
-void test_read_back(void)
+void test_write_read_json(void)
 {
    // Temporary files
    char temp_file[] = "/tmp/tempfile-XXXXXX";
@@ -75,7 +75,7 @@ void test_read_back(void)
       json_decref(read_back_json);
 }
 
-void test_tlv_rw(void)
+void test_read_write_tlv(void)
 {
    // Create temporary TLV file
    char tlv_file[] = "/tmp/tlvfile-XXXXXX";
@@ -138,7 +138,7 @@ void test_tlv_rw(void)
    remove(tlv_file);
 }
 
-void test_read_json_file(void)
+void test_hash_values_present(void)
 {
    // Create temporary JSON files
    char input_file[] = "/tmp/infile-XXXXXX";
@@ -224,8 +224,8 @@ int main()
    }
 
    /* add the tests to the tlv_test_suite */
-   if ((NULL == CU_add_test(tlvSuite, "test_tlv_rw", test_tlv_rw)) ||
-       (NULL == CU_add_test(tlvSuite, "test_read_json_file", test_read_json_file)))
+   if ((NULL == CU_add_test(tlvSuite, "test_read_write_tlv", test_read_write_tlv)) ||
+       (NULL == CU_add_test(tlvSuite, "test_hash_values_present", test_hash_values_present)))
    {
       CU_cleanup_registry();
       return CU_get_error();
@@ -239,8 +239,8 @@ int main()
       return CU_get_error();
    }
 
-   /* add the test_read_json_file to the json_test_suite */
-   if (NULL == CU_add_test(jsonSuite, "test_read_json_file", test_read_json_file))
+   /* add the test_hash_values_present to the json_test_suite */
+   if (NULL == CU_add_test(jsonSuite, "test_hash_values_present", test_hash_values_present))
    {
       CU_cleanup_registry();
       return CU_get_error();
@@ -252,8 +252,8 @@ int main()
         return CU_get_error();
     }
 
-    /* add the test_read_back to the back_test_suite */
-    if (NULL == CU_add_test(backSuite, "test_read_back", test_read_back))
+    /* add the test_write_read_json to the back_test_suite */
+    if (NULL == CU_add_test(backSuite, "test_write_read_json", test_write_read_json))
     {
         CU_cleanup_registry();
         return CU_get_error();
